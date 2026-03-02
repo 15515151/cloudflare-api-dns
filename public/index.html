@@ -21,8 +21,8 @@
       </a>
       <ul class="navbar-nav">
         <li id="navGuest">
-          <button onclick="openModal('loginModal')" class="btn btn-secondary btn-sm">登录</button>
-          <button id="registerBtn" onclick="openModal('registerModal')" class="btn btn-primary btn-sm">注册</button>
+          <a href="/login.html" class="btn btn-secondary btn-sm">登录</a>
+          <a id="registerBtn" href="/login.html?tab=register" class="btn btn-primary btn-sm">注册</a>
         </li>
         <li id="navUser" class="hidden" style="display:none;">
           <a href="/panel.html">控制面板</a>
@@ -96,77 +96,6 @@
     </footer>
   </div>
 
-  <!-- Login Modal -->
-  <div class="modal-overlay" id="loginModal" onclick="closeModal(event, 'loginModal')">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h3>登录</h3>
-        <button class="modal-close" onclick="closeModalById('loginModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form onsubmit="doLogin();return false;" autocomplete="on">
-        <div class="form-group">
-          <label>用户名</label>
-          <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label>密码</label>
-          <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码"
-            autocomplete="current-password">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%">登 录</button>
-        </form>
-        <div id="oauthSection" style="display:none">
-          <div style="display:flex;align-items:center;gap:12px;margin:16px 0 12px">
-            <div style="flex:1;height:1px;background:var(--border-color)"></div>
-            <span style="color:var(--text-muted);font-size:0.85rem">或</span>
-            <div style="flex:1;height:1px;background:var(--border-color)"></div>
-          </div>
-          <a href="/api/oauth/login" class="btn btn-secondary"
-            style="width:100%;text-align:center;text-decoration:none;margin-bottom:8px">
-            🔗 使用 Linux.Do 登录
-          </a>
-          <a id="githubLoginBtn" href="/api/github/login" class="btn btn-secondary"
-            style="width:100%;text-align:center;text-decoration:none;display:none">
-            🐙 使用 GitHub 登录
-          </a>
-        </div>
-        <div id="authSwitch" class="auth-switch">
-          还没有账号？<a onclick="switchModal('loginModal','registerModal')">立即注册</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Register Modal -->
-  <div class="modal-overlay" id="registerModal" onclick="closeModal(event, 'registerModal')">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h3>注册</h3>
-        <button class="modal-close" onclick="closeModalById('registerModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>用户名</label>
-          <input type="text" class="form-control" id="regUsername" placeholder="3-20个字符，字母数字下划线">
-        </div>
-        <div class="form-group">
-          <label>邮箱</label>
-          <input type="email" class="form-control" id="regEmail" placeholder="your@email.com">
-        </div>
-        <div class="form-group">
-          <label>密码</label>
-          <input type="password" class="form-control" id="regPassword" placeholder="至少6个字符"
-            onkeydown="if(event.key==='Enter')doRegister()">
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="doRegister()">注 册</button>
-        <div class="auth-switch">
-          已有账号？<a onclick="switchModal('registerModal','loginModal')">立即登录</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Apply Modal -->
   <div class="modal-overlay" id="applyModal" onclick="closeModal(event, 'applyModal')">
     <div class="modal" onclick="event.stopPropagation()">
@@ -234,37 +163,15 @@
           domainSelect.appendChild(opt);
         });
 
-        // 根据注册开关显示/隐藏注册按钮
         if (!siteConfig.allowRegister) {
           const btn = document.getElementById('registerBtn');
           if (btn) btn.style.display = 'none';
-          const sw = document.getElementById('authSwitch');
-          if (sw) sw.style.display = 'none';
         }
       } catch (e) {
         console.error('获取配置失败:', e);
       }
 
       updateNav();
-
-      // 显示 OAuth 按钮
-      if (siteConfig.oauthEnabled && siteConfig.allowOauthRegister) {
-        const el = document.getElementById('oauthSection');
-        if (el) el.style.display = 'block';
-      }
-      if (siteConfig.githubEnabled) {
-        const el = document.getElementById('oauthSection');
-        if (el) el.style.display = 'block';
-        const btn = document.getElementById('githubLoginBtn');
-        if (btn) btn.style.display = '';
-      }
-
-      // 处理 OAuth 回调错误
-      const urlError = new URLSearchParams(window.location.search).get('error');
-      if (urlError === 'registration_closed') {
-        showToast('管理员暂时关闭了注册', 'error');
-        history.replaceState(null, '', '/');
-      }
     }
 
     function updateNav() {
@@ -288,57 +195,10 @@
       }
     }
 
-    // Modal
-    function openModal(id) {
-      document.getElementById(id).classList.add('active');
-    }
-
-    function closeModalById(id) {
-      document.getElementById(id).classList.remove('active');
-    }
-
-    function closeModal(e, id) {
-      if (e.target === document.getElementById(id)) {
-        closeModalById(id);
-      }
-    }
-
-    function switchModal(from, to) {
-      closeModalById(from);
-      setTimeout(() => openModal(to), 200);
-    }
-
-    // Auth
-    async function doLogin() {
-      const username = document.getElementById('loginUsername').value.trim();
-      const password = document.getElementById('loginPassword').value;
-      if (!username || !password) return showToast('请填写完整信息', 'error');
-
-      try {
-        await api.login(username, password);
-        closeModalById('loginModal');
-        showToast('登录成功', 'success');
-        updateNav();
-      } catch (e) {
-        showToast(e.message, 'error');
-      }
-    }
-
-    async function doRegister() {
-      const username = document.getElementById('regUsername').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      if (!username || !email || !password) return showToast('请填写完整信息', 'error');
-
-      try {
-        await api.register(username, email, password);
-        closeModalById('registerModal');
-        showToast('注册成功', 'success');
-        updateNav();
-      } catch (e) {
-        showToast(e.message, 'error');
-      }
-    }
+    // Modal (apply only)
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModalById(id) { document.getElementById(id).classList.remove('active'); }
+    function closeModal(e, id) { if (e.target === document.getElementById(id)) closeModalById(id); }
 
     // Domain Check
     function checkDomain() {
@@ -378,8 +238,7 @@
     // Apply
     function handleApply() {
       if (!api.isLoggedIn()) {
-        showToast('请先登录', 'info');
-        openModal('loginModal');
+        location.href = '/login.html';
         return;
       }
 

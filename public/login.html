@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 / 注册</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .auth-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:32px; width:100%; max-width:400px; }
+    .auth-card h2 { margin:0 0 24px; font-size:1.4rem; }
+    .auth-tabs { display:flex; gap:8px; margin-bottom:24px; }
+    .auth-tab { flex:1; padding:8px; border:1px solid var(--border-color); border-radius:8px; background:transparent; cursor:pointer; color:var(--text-secondary); font-size:0.95rem; }
+    .auth-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div style="text-align:center;margin-bottom:20px">
+      <a href="/" style="text-decoration:none;font-size:1.1rem;color:var(--text-primary)">🌐 <span id="siteTitle">域名分发站</span></a>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="showTab('login')">登录</button>
+      <button class="auth-tab" id="tabRegister" onclick="showTab('register')">注册</button>
+    </div>
+
+    <!-- 登录表单 -->
+    <div id="loginForm">
+      <form onsubmit="doLogin();return false;" autocomplete="on">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">登 录</button>
+      </form>
+      <div id="oauthSection" style="display:none;margin-top:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="flex:1;height:1px;background:var(--border-color)"></div>
+          <span style="color:var(--text-muted);font-size:0.85rem">或</span>
+          <div style="flex:1;height:1px;background:var(--border-color)"></div>
+        </div>
+        <a href="/api/oauth/login" class="btn btn-secondary" style="width:100%;text-align:center;text-decoration:none;margin-bottom:8px">
+          🔗 使用 Linux.Do 登录
+        </a>
+        <a id="githubLoginBtn" href="/api/github/login" class="btn btn-secondary" style="width:100%;text-align:center;text-decoration:none;display:none">
+          🐙 使用 GitHub 登录
+        </a>
+      </div>
+    </div>
+
+    <!-- 注册表单 -->
+    <div id="registerForm" style="display:none">
+      <form onsubmit="doRegister();return false;" autocomplete="on">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" class="form-control" id="regUsername" placeholder="3-20个字符，字母数字下划线" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" class="form-control" id="regEmail" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" class="form-control" id="regPassword" placeholder="至少6个字符" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">注 册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    async function init() {
+      if (api.isLoggedIn()) { location.href = '/panel.html'; return; }
+      try {
+        const cfg = await api.getConfig();
+        document.getElementById('siteTitle').textContent = cfg.siteName;
+        document.title = '登录 / 注册 - ' + cfg.siteName;
+        if (!cfg.allowRegister) {
+          document.getElementById('tabRegister').style.display = 'none';
+        }
+        if ((cfg.oauthEnabled && cfg.allowOauthRegister) || cfg.githubEnabled) {
+          document.getElementById('oauthSection').style.display = 'block';
+        }
+        if (cfg.githubEnabled) {
+          document.getElementById('githubLoginBtn').style.display = '';
+        }
+      } catch(e) {}
+
+      const params = new URLSearchParams(location.search);
+      if (params.get('tab') === 'register') showTab('register');
+      if (params.get('error') === 'registration_closed') showToast('管理员暂时关闭了注册', 'error');
+    }
+
+    function showTab(tab) {
+      document.getElementById('loginForm').style.display = tab === 'login' ? '' : 'none';
+      document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
+      document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+      document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+    }
+
+    async function doLogin() {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!username || !password) return showToast('请填写完整信息', 'error');
+      try {
+        await api.login(username, password);
+        location.href = '/panel.html';
+      } catch(e) { showToast(e.message, 'error'); }
+    }
+
+    async function doRegister() {
+      const username = document.getElementById('regUsername').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      if (!username || !email || !password) return showToast('请填写完整信息', 'error');
+      try {
+        await api.register(username, email, password);
+        showToast('注册成功', 'success');
+        setTimeout(() => location.href = '/panel.html', 800);
+      } catch(e) { showToast(e.message, 'error'); }
+    }
+
+    init();
+  </script>
+</body>
+</html>

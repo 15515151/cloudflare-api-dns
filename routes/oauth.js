@@ -30,7 +30,7 @@ router.get('/login', (req, res) => {
 router.get('/callback', async (req, res) => {
     const { code } = req.query;
     if (!code) {
-        return res.redirect('/?error=no_code');
+        return res.redirect('/login.html?error=no_code');
     }
 
     const oauth = getOAuthConfig(req);
@@ -58,7 +58,7 @@ router.get('/callback', async (req, res) => {
 
         if (!tokenData.access_token) {
             console.error('OAuth2 获取 token 失败:', tokenData);
-            return res.redirect('/?error=token_failed');
+            return res.redirect('/login.html?error=token_failed');
         }
 
         // 2. 用 access_token 获取用户信息
@@ -72,7 +72,7 @@ router.get('/callback', async (req, res) => {
 
         if (!userInfo.username) {
             console.error('OAuth2 获取用户信息失败:', userInfo);
-            return res.redirect('/?error=user_info_failed');
+            return res.redirect('/login.html?error=user_info_failed');
         }
 
         // 3. 查找或创建本地用户
@@ -83,14 +83,14 @@ router.get('/callback', async (req, res) => {
         if (!existingUser) {
             const allowOauthRegister = db.getSystemConfig('allow_oauth_register');
             if (allowOauthRegister !== 'true') {
-                return res.redirect('/?error=registration_closed');
+                return res.redirect('/login.html?error=registration_closed');
             }
         }
 
         const localUser = db.createOrGetOAuthUser(userInfo.username, email);
 
         if (localUser.status !== 'active') {
-            return res.redirect('/?error=account_disabled');
+            return res.redirect('/login.html?error=account_disabled');
         }
 
         // 4. 签发 JWT
@@ -112,13 +112,13 @@ router.get('/callback', async (req, res) => {
 <script>
   localStorage.setItem('token', '${token}');
   localStorage.setItem('user', '${JSON.stringify(userData).replace(/'/g, "\\'")}');
-  window.location.href = '/';
+  window.location.href = '/panel.html';
 </script>
 </body></html>`);
 
     } catch (err) {
         console.error('OAuth2 回调处理失败:', err);
-        res.redirect('/?error=oauth_failed');
+        res.redirect('/login.html?error=oauth_failed');
     }
 });
 

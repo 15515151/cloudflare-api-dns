@@ -17,7 +17,7 @@ router.get('/login', (req, res) => {
 
 router.get('/callback', async (req, res) => {
     const { code } = req.query;
-    if (!code) return res.redirect('/?error=no_code');
+    if (!code) return res.redirect('/login.html?error=no_code');
 
     const gh = req.config.github;
     try {
@@ -28,14 +28,14 @@ router.get('/callback', async (req, res) => {
             body: JSON.stringify({ client_id: gh.clientId, client_secret: gh.clientSecret, code, redirect_uri: gh.redirectUri })
         });
         const tokenData = await tokenRes.json();
-        if (!tokenData.access_token) return res.redirect('/?error=token_failed');
+        if (!tokenData.access_token) return res.redirect('/login.html?error=token_failed');
 
         // 获取用户信息
         const userRes = await fetch('https://api.github.com/user', {
             headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'Accept': 'application/json' }
         });
         const userInfo = await userRes.json();
-        if (!userInfo.login) return res.redirect('/?error=user_info_failed');
+        if (!userInfo.login) return res.redirect('/login.html?error=user_info_failed');
 
         // 获取邮箱
         let email = userInfo.email;
@@ -52,11 +52,11 @@ router.get('/callback', async (req, res) => {
         const existingUser = db.getUserByEmail(email);
         if (!existingUser) {
             const allowGithubRegister = db.getSystemConfig('allow_github_register');
-            if (allowGithubRegister === 'false') return res.redirect('/?error=registration_closed');
+            if (allowGithubRegister === 'false') return res.redirect('/login.html?error=registration_closed');
         }
 
         const localUser = db.createOrGetOAuthUser(userInfo.login, email);
-        if (localUser.status !== 'active') return res.redirect('/?error=account_disabled');
+        if (localUser.status !== 'active') return res.redirect('/login.html?error=account_disabled');
 
         const token = jwt.sign({ id: localUser.id }, req.config.site.jwtSecret, { expiresIn: '7d' });
         const userData = { id: localUser.id, username: localUser.username, email: localUser.email, role: localUser.role, status: localUser.status };
@@ -64,11 +64,11 @@ router.get('/callback', async (req, res) => {
         res.send(`<!DOCTYPE html><html><head><title>登录中...</title></head><body><script>
   localStorage.setItem('token', '${token}');
   localStorage.setItem('user', '${JSON.stringify(userData).replace(/'/g, "\\'")}');
-  window.location.href = '/';
+  window.location.href = '/panel.html';
 </script></body></html>`);
     } catch (err) {
         console.error('GitHub OAuth 回调失败:', err);
-        res.redirect('/?error=oauth_failed');
+        res.redirect('/login.html?error=oauth_failed');
     }
 });
 

@@ -98,6 +98,10 @@ oauth:
 │   ├── github-oauth.js# GitHub OAuth
 │   └── credit.js      # 积分系统
 └── public/            # 前端静态文件
+    ├── index.html     # 首页
+    ├── login.html     # 登录/注册页
+    ├── panel.html     # 用户控制面板
+    └── admin.html     # 管理后台
 ```
 
 ## License
