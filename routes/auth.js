@@ -87,6 +87,7 @@ router.post('/login', (req, res) => {
                 status: user.status
             }
         });
+        console.log(`[登录] 用户=${user.username}(${user.id}) IP=${req.ip}`);
     } catch (err) {
         console.error('登录失败:', err);
         res.status(500).json({ error: '登录失败，请重试' });

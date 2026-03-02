@@ -173,8 +173,8 @@ class ApiClient {
         return this.request('GET', '/credit/config');
     }
 
-    async createCreditOrder() {
-        return this.request('POST', '/credit/create');
+    async createCreditOrder(quantity = 1) {
+        return this.request('POST', '/credit/create', { quantity });
     }
 
     async markNotificationsRead() {

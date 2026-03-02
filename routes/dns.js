@@ -178,6 +178,7 @@ router.post('/records', async (req, res) => {
                 remark
             }
         });
+        console.log(`[DNS 创建] 用户=${req.user.username}(${req.user.id}) ${fullDomain} ${recordType}=${recordValue}`);
     } catch (err) {
         console.error('创建域名记录失败:', err);
         res.status(500).json({ error: err.message || '创建失败，请重试' });
@@ -214,7 +215,7 @@ router.put('/records/:id', async (req, res) => {
 
         // 更新数据库
         db.updateDomain(id, recordValue, proxied, domain.ttl, remark);
-
+        console.log(`[DNS 修改] 用户=${req.user.username}(${req.user.id}) id=${id} 新值=${recordValue}`);
         res.json({ message: '修改成功' });
     } catch (err) {
         console.error('修改域名记录失败:', err);
@@ -248,7 +249,7 @@ router.delete('/records/:id', async (req, res) => {
 
         // 从数据库删除
         db.deleteDomain(id);
-
+        console.log(`[DNS 删除] 用户=${req.user.username}(${req.user.id}) ${domain.subdomain}.${domain.domain} id=${id}`);
         res.json({ message: '删除成功' });
     } catch (err) {
         console.error('删除域名记录失败:', err);
