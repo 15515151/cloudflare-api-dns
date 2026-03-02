@@ -1,0 +1,17 @@
+{
+  "name": "cloudflare-subdomain-distributor",
+  "version": "1.0.0",
+  "description": "基于 Cloudflare API 的二级域名分发站",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.6.2",
+    "express": "^4.18.2",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

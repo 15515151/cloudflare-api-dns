@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>域名分发站 - 免费二级域名申请</title>
+  <meta name="description" content="免费申请二级域名，支持 A、AAAA、CNAME、TXT、MX 记录类型，自助管理 DNS">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="navbar-brand">
+        <span class="icon">🌐</span>
+        <span id="siteTitle">域名分发站</span>
+      </a>
+      <ul class="navbar-nav">
+        <li id="navGuest">
+          <button onclick="openModal('loginModal')" class="btn btn-secondary btn-sm">登录</button>
+          <button id="registerBtn" onclick="openModal('registerModal')" class="btn btn-primary btn-sm">注册</button>
+        </li>
+        <li id="navUser" class="hidden" style="display:none;">
+          <a href="/panel.html">控制面板</a>
+          <span id="navUsername" style="color:var(--text-secondary);font-size:0.85rem"></span>
+          <button onclick="api.logout()" class="btn btn-secondary btn-sm">退出</button>
+        </li>
+        <li id="navAdmin" class="hidden" style="display:none;">
+          <a href="/admin.html">管理后台</a>
+        </li>
+        <li><button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="切换主题">☀️</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Warning Banner -->
+  <div class="container" style="margin-top:12px">
+    <div style="background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;border-radius:8px;padding:12px 16px;font-size:0.9rem;line-height:1.8">
+      ⚠️ <strong>使用须知：</strong>本平台仅供合法用途，严禁用于以下行为：<br>
+      🚫 传播色情、赌博、毒品等违法违规内容 &nbsp;|&nbsp; 🚫 散布谣言、诈骗、钓鱼等恶意信息 &nbsp;|&nbsp; 🚫 侵犯他人版权、隐私及合法权益<br>
+      违规域名将被立即删除，情节严重者封禁账号并上报相关部门。
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="container">
+    <section class="hero">
+      <h1>免费二级域名</h1>
+      <p class="subtitle">输入你想要的子域名，立即获取属于你的专属二级域名</p>
+
+      <div class="domain-checker">
+        <div class="domain-input-group">
+          <input type="text" id="subdomainInput" placeholder="输入子域名" oninput="checkDomain()" autocomplete="off"
+            spellcheck="false">
+          <span class="domain-suffix" id="domainSuffix">.example.com</span>
+        </div>
+        <div class="domain-check-result" id="checkResult"></div>
+        <div style="margin-top: 16px;">
+          <button class="btn btn-primary btn-lg" onclick="handleApply()" id="applyBtn">
+            🚀 立即申请
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>即时生效</h3>
+        <p>基于 Cloudflare DNS，域名解析秒级生效，全球 Anycast 网络加速</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🛡️</span>
+        <h3>安全可靠</h3>
+        <p>支持 Cloudflare 代理，提供 DDoS 防护和 SSL 证书</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔧</span>
+        <h3>自由管理</h3>
+        <p>支持 A、AAAA、CNAME、TXT、MX 多种记录类型，随时修改</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎯</span>
+        <h3>简单易用</h3>
+        <p>注册账号即可开始使用，无需繁琐的审核流程</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Powered by Cloudflare DNS API</p>
+    </footer>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal" onclick="closeModal(event, 'loginModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>登录</h3>
+        <button class="modal-close" onclick="closeModalById('loginModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码"
+            onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="doLogin()">登 录</button>
+        <div id="oauthSection" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;margin:16px 0 12px">
+            <div style="flex:1;height:1px;background:var(--border-color)"></div>
+            <span style="color:var(--text-muted);font-size:0.85rem">或</span>
+            <div style="flex:1;height:1px;background:var(--border-color)"></div>
+          </div>
+          <a href="/api/oauth/login" class="btn btn-secondary"
+            style="width:100%;text-align:center;text-decoration:none;margin-bottom:8px">
+            🔗 使用 Linux.Do 登录
+          </a>
+          <a id="githubLoginBtn" href="/api/github/login" class="btn btn-secondary"
+            style="width:100%;text-align:center;text-decoration:none;display:none">
+            🐙 使用 GitHub 登录
+          </a>
+        </div>
+        <div id="authSwitch" class="auth-switch">
+          还没有账号？<a onclick="switchModal('loginModal','registerModal')">立即注册</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div class="modal-overlay" id="registerModal" onclick="closeModal(event, 'registerModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>注册</h3>
+        <button class="modal-close" onclick="closeModalById('registerModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" class="form-control" id="regUsername" placeholder="3-20个字符，字母数字下划线">
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" class="form-control" id="regEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" class="form-control" id="regPassword" placeholder="至少6个字符"
+            onkeydown="if(event.key==='Enter')doRegister()">
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="doRegister()">注 册</button>
+        <div class="auth-switch">
+          已有账号？<a onclick="switchModal('registerModal','loginModal')">立即登录</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apply Modal -->
+  <div class="modal-overlay" id="applyModal" onclick="closeModal(event, 'applyModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>申请域名</h3>
+        <button class="modal-close" onclick="closeModalById('applyModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>子域名</label>
+          <input type="text" class="form-control" id="applySubdomain" readonly>
+        </div>
+        <div class="form-group">
+          <label>记录类型</label>
+          <select class="form-control" id="applyType">
+            <option value="A">A (IPv4)</option>
+            <option value="AAAA">AAAA (IPv6)</option>
+            <option value="CNAME">CNAME (别名)</option>
+            <option value="TXT">TXT (文本)</option>
+            <option value="MX">MX (邮件)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>记录值</label>
+          <input type="text" class="form-control" id="applyValue" placeholder="如: 1.2.3.4">
+        </div>
+        <div class="form-group">
+          <label>备注（可选）</label>
+          <input type="text" class="form-control" id="applyRemark" placeholder="用途说明">
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="applyProxied">
+            开启 Cloudflare 代理（仅 A/AAAA/CNAME）
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModalById('applyModal')">取消</button>
+        <button class="btn btn-primary" onclick="submitApply()">确认申请</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    let siteConfig = {};
+    let checkTimer = null;
+
+    // 初始化
+    async function init() {
+      try {
+        siteConfig = await api.getConfig();
+        document.getElementById('domainSuffix').textContent = '.' + siteConfig.domain;
+        document.getElementById('siteTitle').textContent = siteConfig.siteName;
+        document.title = siteConfig.siteName + ' - 免费二级域名申请';
+
+        // 根据注册开关显示/隐藏注册按钮
+        if (!siteConfig.allowRegister) {
+          const btn = document.getElementById('registerBtn');
+          if (btn) btn.style.display = 'none';
+          const sw = document.getElementById('authSwitch');
+          if (sw) sw.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('获取配置失败:', e);
+      }
+
+      updateNav();
+
+      // 显示 OAuth 按钮
+      if (siteConfig.oauthEnabled && siteConfig.allowOauthRegister) {
+        const el = document.getElementById('oauthSection');
+        if (el) el.style.display = 'block';
+      }
+      if (siteConfig.githubEnabled) {
+        const el = document.getElementById('oauthSection');
+        if (el) el.style.display = 'block';
+        const btn = document.getElementById('githubLoginBtn');
+        if (btn) btn.style.display = '';
+      }
+    }
+
+    function updateNav() {
+      const guest = document.getElementById('navGuest');
+      const user = document.getElementById('navUser');
+      const admin = document.getElementById('navAdmin');
+
+      if (api.isLoggedIn()) {
+        guest.style.display = 'none';
+        user.style.display = '';
+        user.classList.remove('hidden');
+        document.getElementById('navUsername').textContent = api.user.username;
+        if (api.isAdmin()) {
+          admin.style.display = '';
+          admin.classList.remove('hidden');
+        }
+      } else {
+        guest.style.display = '';
+        user.style.display = 'none';
+        admin.style.display = 'none';
+      }
+    }
+
+    // Modal
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModalById(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function closeModal(e, id) {
+      if (e.target === document.getElementById(id)) {
+        closeModalById(id);
+      }
+    }
+
+    function switchModal(from, to) {
+      closeModalById(from);
+      setTimeout(() => openModal(to), 200);
+    }
+
+    // Auth
+    async function doLogin() {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!username || !password) return showToast('请填写完整信息', 'error');
+
+      try {
+        await api.login(username, password);
+        closeModalById('loginModal');
+        showToast('登录成功', 'success');
+        updateNav();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function doRegister() {
+      const username = document.getElementById('regUsername').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      if (!username || !email || !password) return showToast('请填写完整信息', 'error');
+
+      try {
+        await api.register(username, email, password);
+        closeModalById('registerModal');
+        showToast('注册成功', 'success');
+        updateNav();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    // Domain Check
+    function checkDomain() {
+      clearTimeout(checkTimer);
+      const input = document.getElementById('subdomainInput').value.trim().toLowerCase();
+      const result = document.getElementById('checkResult');
+
+      if (!input) {
+        result.style.display = 'none';
+        return;
+      }
+
+      checkTimer = setTimeout(async () => {
+        if (!api.isLoggedIn()) {
+          result.className = 'domain-check-result error';
+          result.textContent = '请先登录或注册账号';
+          return;
+        }
+
+        try {
+          const data = await api.checkSubdomain(input);
+          if (data.available) {
+            result.className = 'domain-check-result available';
+            result.textContent = `✓ ${input}.${siteConfig.domain} 可以注册`;
+          } else {
+            result.className = 'domain-check-result unavailable';
+            result.textContent = `✕ ${input}.${siteConfig.domain} 已被占用`;
+          }
+        } catch (e) {
+          result.className = 'domain-check-result error';
+          result.textContent = e.message;
+        }
+      }, 400);
+    }
+
+    // Apply
+    function handleApply() {
+      if (!api.isLoggedIn()) {
+        showToast('请先登录', 'info');
+        openModal('loginModal');
+        return;
+      }
+
+      const subdomain = document.getElementById('subdomainInput').value.trim().toLowerCase();
+      if (!subdomain) {
+        showToast('请输入子域名', 'error');
+        return;
+      }
+
+      document.getElementById('applySubdomain').value = subdomain + '.' + siteConfig.domain;
+      openModal('applyModal');
+    }
+
+    async function submitApply() {
+      const subdomain = document.getElementById('subdomainInput').value.trim().toLowerCase();
+      const recordType = document.getElementById('applyType').value;
+      const recordValue = document.getElementById('applyValue').value.trim();
+      const remark = document.getElementById('applyRemark').value.trim();
+      const proxied = document.getElementById('applyProxied').checked;
+
+      if (!recordValue) {
+        showToast('请填写记录值', 'error');
+        return;
+      }
+
+      try {
+        await api.createRecord({ subdomain, recordType, recordValue, proxied, remark });
+        closeModalById('applyModal');
+        showToast('域名申请成功！', 'success');
+        document.getElementById('subdomainInput').value = '';
+        document.getElementById('checkResult').style.display = 'none';
+        document.getElementById('applyValue').value = '';
+        document.getElementById('applyRemark').value = '';
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+
+</html>

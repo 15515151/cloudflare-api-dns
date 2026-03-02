@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制面板 - 域名分发站</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="navbar-brand">
+                <span class="icon">🌐</span>
+                <span id="siteTitle">域名分发站</span>
+            </a>
+            <ul class="navbar-nav">
+                <a href="/" class="btn btn-secondary btn-sm">首页</a>
+                <a href="/panel.html" class="btn btn-secondary btn-sm active">控制面板</a>
+                <span id="navAdminLink" style="display:none"><a href="/admin.html"
+                        class="btn btn-secondary btn-sm">管理后台</a></span>
+                <button onclick="openPasswordModal()" class="btn btn-secondary btn-sm">修改密码</button>
+                <button onclick="api.logout()" class="btn btn-secondary btn-sm">退出</button>
+                <button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="切换主题">☀️</button>
+                <span id="navUsername" style="color:var(--text-secondary);font-size:0.85rem"></span>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>控制面板</h1>
+            <p>管理你的二级域名记录</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="userStats">
+            <div class="stat-card">
+                <div class="stat-value" id="statCount">0</div>
+                <div class="stat-label">已使用域名</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statLimit">0</div>
+                <div class="stat-label">域名配额</div>
+            </div>
+        </div>
+
+        <!-- Records Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2>📋 域名记录</h2>
+                <div style="display:flex;gap:8px">
+                    <button id="creditBtn" class="btn btn-secondary btn-sm" onclick="openCreditModal()" style="display:none">💎 积分兑换配额</button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ 添加域名</button>
+                </div>
+            </div>
+            <div class="card-body" id="recordsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div class="modal-overlay" id="addModal" onclick="closeModal(event,'addModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>添加域名</h3>
+                <button class="modal-close" onclick="closeModalById('addModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>子域名</label>
+                    <input type="text" class="form-control" id="addSubdomain" placeholder="输入子域名">
+                    <div class="domain-check-result" id="addCheckResult" style="margin-top:8px"></div>
+                </div>
+                <div class="form-group">
+                    <label>记录类型</label>
+                    <select class="form-control" id="addType">
+                        <option value="A">A (IPv4)</option>
+                        <option value="AAAA">AAAA (IPv6)</option>
+                        <option value="CNAME">CNAME (别名)</option>
+                        <option value="TXT">TXT (文本)</option>
+                        <option value="MX">MX (邮件)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>记录值</label>
+                    <input type="text" class="form-control" id="addValue" placeholder="如: 1.2.3.4">
+                </div>
+                <div class="form-group">
+                    <label>备注（可选）</label>
+                    <input type="text" class="form-control" id="addRemark" placeholder="用途说明">
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="addProxied">
+                        开启 Cloudflare 代理
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModalById('addModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitAdd()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal" onclick="closeModal(event,'editModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>修改记录</h3>
+                <button class="modal-close" onclick="closeModalById('editModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>域名</label>
+                    <input type="text" class="form-control" id="editDomain" readonly>
+                </div>
+                <div class="form-group">
+                    <label>记录类型</label>
+                    <input type="text" class="form-control" id="editType" readonly>
+                </div>
+                <div class="form-group">
+                    <label>记录值</label>
+                    <input type="text" class="form-control" id="editValue" placeholder="新的记录值">
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" class="form-control" id="editRemark">
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="editProxied">
+                        开启 Cloudflare 代理
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModalById('editModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitEdit()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div class="modal-overlay" id="notificationModal" onclick="closeModal(event,'notificationModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>📢 系统通知</h3>
+                <button class="modal-close" onclick="dismissNotifications()">&times;</button>
+            </div>
+            <div class="modal-body" id="notificationList"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="dismissNotifications()">我已知晓</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="modal-overlay" id="passwordModal" onclick="closeModal(event,'passwordModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>修改密码</h3>
+                <button class="modal-close" onclick="closeModalById('passwordModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>原密码</label>
+                    <input type="password" class="form-control" id="oldPassword" placeholder="请输入原密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" class="form-control" id="newPassword" placeholder="至少6个字符">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" class="form-control" id="confirmPassword" placeholder="再次输入新密码">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModalById('passwordModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitPassword()">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Modal -->
+    <div class="modal-overlay" id="creditModal" onclick="closeModal(event,'creditModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>💎 积分兑换域名配额</h3>
+                <button class="modal-close" onclick="closeModalById('creditModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="creditDesc" style="color:var(--text-muted);margin-bottom:16px"></p>
+                <p style="font-size:0.9rem">点击确认后将跳转到 Linux.Do Credit 完成积分支付，支付成功后配额自动增加。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModalById('creditModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitCredit()">前往支付</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/theme.js"></script>
+    <script>
+        let siteConfig = {};
+
+        async function init() {
+            if (!api.isLoggedIn()) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                siteConfig = await api.getConfig();
+                document.getElementById('siteTitle').textContent = siteConfig.siteName;
+                document.getElementById('navUsername').textContent = api.user.username;
+                document.getElementById('statLimit').textContent = siteConfig.maxDomainsPerUser;
+
+                if (api.isAdmin()) {
+                    document.getElementById('navAdminLink').style.display = '';
+                }
+
+                await loadRecords();
+                checkNotifications();
+
+                // 检查积分兑换是否启用
+                try {
+                    const creditCfg = await api.getCreditConfig();
+                    if (creditCfg.enabled) {
+                        creditConfig = creditCfg;
+                        const btn = document.getElementById('creditBtn');
+                        if (btn) { btn.style.display = ''; btn.textContent = `💎 积分兑换配额 (${creditCfg.creditsPerQuota} 积分/个)`; }
+                    }
+                } catch (e) {}
+
+            } catch (e) {
+                showToast('加载失败: ' + e.message, 'error');
+            }
+        }
+
+        async function loadRecords() {
+            const container = document.getElementById('recordsContainer');
+            try {
+                const data = await api.getRecords();
+                document.getElementById('statCount').textContent = data.records.length;
+                if (data.quota !== undefined) {
+                    document.getElementById('statLimit').textContent = data.quota === 0 ? '不限' : data.quota;
+                }
+
+                if (data.records.length === 0) {
+                    container.innerHTML = `
+            <div class="empty-state">
+              <span class="empty-icon">📭</span>
+              <p>还没有域名记录</p>
+              <button class="btn btn-primary" onclick="openAddModal()">+ 添加域名</button>
+            </div>`;
+                    return;
+                }
+
+                container.innerHTML = `
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>域名</th>
+                  <th>类型</th>
+                  <th>记录值</th>
+                  <th>代理</th>
+                  <th>备注</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.records.map(r => `
+                  <tr>
+                    <td><strong>${r.subdomain}.${siteConfig.domain}</strong></td>
+                    <td><span class="badge badge-info">${r.record_type}</span></td>
+                    <td style="font-family:monospace;font-size:0.85rem">${r.record_value}</td>
+                    <td>${r.proxied ? '<span class="badge badge-success">已开启</span>' : '<span class="badge badge-warning">关闭</span>'}</td>
+                    <td style="color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis">${r.remark || '-'}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at).toLocaleString('zh-CN')}</td>
+                    <td>
+                      <div class="table-actions">
+                        ${r.status === 'admin_suspended'
+                          ? '<span style="color:var(--color-error);font-size:0.8rem">⛔ 已被管理员禁用</span>'
+                          : `<button class="btn btn-secondary btn-sm" onclick='openEdit(${JSON.stringify(r)})'>修改</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">删除</button>`}
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`;
+            } catch (e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        // Modal helpers
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModalById(id) { document.getElementById(id).classList.remove('active'); }
+        function closeModal(e, id) { if (e.target === document.getElementById(id)) closeModalById(id); }
+
+        function openAddModal() {
+            document.getElementById('addSubdomain').value = '';
+            document.getElementById('addValue').value = '';
+            document.getElementById('addRemark').value = '';
+            document.getElementById('addCheckResult').style.display = 'none';
+            openModal('addModal');
+        }
+
+        // Password Modal
+        function openPasswordModal() {
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            openModal('passwordModal');
+        }
+
+        async function submitPassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showToast('请填写完整信息', 'error');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showToast('新密码长度至少 6 个字符', 'error');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showToast('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            try {
+                await api.updatePassword(oldPassword, newPassword);
+                closeModalById('passwordModal');
+                showToast('密码修改成功！', 'success');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        // Check subdomain in add modal
+        let addCheckTimer;
+        document.getElementById('addSubdomain').addEventListener('input', function () {
+            clearTimeout(addCheckTimer);
+            const v = this.value.trim().toLowerCase();
+            const result = document.getElementById('addCheckResult');
+            if (!v) { result.style.display = 'none'; return; }
+            addCheckTimer = setTimeout(async () => {
+                try {
+                    const data = await api.checkSubdomain(v);
+                    result.className = 'domain-check-result ' + (data.available ? 'available' : 'unavailable');
+                    result.textContent = data.available ? `✓ ${v}.${siteConfig.domain} 可用` : `✕ ${v}.${siteConfig.domain} 已被占用`;
+                } catch (e) {
+                    result.className = 'domain-check-result error';
+                    result.textContent = e.message;
+                }
+            }, 400);
+        });
+
+        async function submitAdd() {
+            const subdomain = document.getElementById('addSubdomain').value.trim().toLowerCase();
+            const recordType = document.getElementById('addType').value;
+            const recordValue = document.getElementById('addValue').value.trim();
+            const remark = document.getElementById('addRemark').value.trim();
+            const proxied = document.getElementById('addProxied').checked;
+
+            if (!subdomain || !recordValue) { showToast('请填写完整信息', 'error'); return; }
+
+            try {
+                await api.createRecord({ subdomain, recordType, recordValue, proxied, remark });
+                closeModalById('addModal');
+                showToast('添加成功！', 'success');
+                await loadRecords();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function openEdit(record) {
+            document.getElementById('editId').value = record.id;
+            document.getElementById('editDomain').value = record.subdomain + '.' + siteConfig.domain;
+            document.getElementById('editType').value = record.record_type;
+            document.getElementById('editValue').value = record.record_value;
+            document.getElementById('editRemark').value = record.remark || '';
+            document.getElementById('editProxied').checked = !!record.proxied;
+            openModal('editModal');
+        }
+
+        async function submitEdit() {
+            const id = document.getElementById('editId').value;
+            const recordValue = document.getElementById('editValue').value.trim();
+            const remark = document.getElementById('editRemark').value.trim();
+            const proxied = document.getElementById('editProxied').checked;
+
+            if (!recordValue) { showToast('请填写记录值', 'error'); return; }
+
+            try {
+                await api.updateRecord(id, { recordValue, proxied, remark });
+                closeModalById('editModal');
+                showToast('修改成功！', 'success');
+                await loadRecords();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm('确定删除此域名记录？此操作不可恢复')) return;
+            try {
+                await api.deleteRecord(id);
+                showToast('删除成功', 'success');
+                await loadRecords();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function checkNotifications() {
+            try {
+                const data = await api.getNotifications();
+                if (!data.notifications.length) return;
+                document.getElementById('notificationList').innerHTML =
+                    data.notifications.map(n => `<div style="padding:10px 0;border-bottom:1px solid var(--border-glass)">${n.message}</div>`).join('');
+                openModal('notificationModal');
+            } catch (e) {}
+        }
+
+        async function dismissNotifications() {
+            closeModalById('notificationModal');
+            try { await api.markNotificationsRead(); } catch (e) {}
+        }
+
+        let creditConfig = {};
+        function openCreditModal() {
+            document.getElementById('creditDesc').textContent = `消耗 ${creditConfig.creditsPerQuota || 50} 积分，兑换 1 个域名配额。`;
+            openModal('creditModal');
+        }
+
+        async function submitCredit() {
+            try {
+                const data = await api.createCreditOrder();
+                // 构造表单提交跳转
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = data.payUrl;
+                Object.entries(data.params).forEach(([k, v]) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden'; input.name = k; input.value = v;
+                    form.appendChild(input);
+                });
+                document.body.appendChild(form);
+                form.submit();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

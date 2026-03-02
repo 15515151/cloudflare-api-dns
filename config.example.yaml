@@ -1,0 +1,59 @@
+# Cloudflare API 配置
+cloudflare:
+  # API Token (需要 Zone.DNS 编辑权限)
+  apiToken: "your-cloudflare-api-token"
+  # Zone ID (主域名对应的 Zone ID)
+  zoneId: "your-zone-id"
+
+# 站点设置
+site:
+  # 服务端口
+  port: 3000
+  # 主域名 (用户将申请此域名下的子域名)
+  domain: "example.com"
+  # JWT 密钥 (请修改为随机字符串)
+  jwtSecret: "change-this-to-a-random-string"
+  # 站点名称
+  siteName: "域名分发站"
+
+# 用户限制
+limits:
+  # 每个用户最多可申请的域名数量
+  maxDomainsPerUser: 5
+  # 允许的记录类型
+  allowedRecordTypes:
+    - A
+    - AAAA
+    - CNAME
+    - TXT
+    - MX
+
+# 管理员配置
+admin:
+  # 管理员用户名
+  username: "admin"
+  # 管理员密码 (首次运行时会根据此密码创建管理员账号)
+  password: "admin123456"
+
+# Linux.Do OAuth2 登录（可选）
+oauth:
+  clientId: "your-linuxdo-client-id"
+  clientSecret: "your-linuxdo-client-secret"
+  redirectUri: "http://localhost:3000/api/oauth/callback"
+  authUrl: "https://connect.linux.do/oauth2/authorize"
+  tokenUrl: "https://connect.linux.do/oauth2/token"
+  userInfoUrl: "https://connect.linux.do/api/user"
+
+# GitHub OAuth2 登录（可选）
+github:
+  clientId: "your-github-client-id"
+  clientSecret: "your-github-client-secret"
+  redirectUri: "http://localhost:3000/api/github/callback"
+
+# Linux.Do Credit 积分兑换（可选）
+credit:
+  pid: "your-credit-pid"
+  key: "your-credit-key"
+  notifyUrl: "https://你的域名/api/credit/notify"
+  returnUrl: "https://你的域名/panel.html"
+  creditsPerQuota: 50

@@ -1,0 +1,351 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const db = require('../lib/database');
+const CloudflareAPI = require('../lib/cloudflare');
+const { authenticate, requireAdmin } = require('../middleware/auth');
+
+const router = express.Router();
+
+// 管理员路由都需要登录 + 管理员权限
+router.use(authenticate);
+router.use(requireAdmin);
+
+function getCF(req) {
+    return new CloudflareAPI(req.config.cloudflare.apiToken, req.config.cloudflare.zoneId);
+}
+
+// 获取所有域名记录
+router.get('/records', (req, res) => {
+    try {
+        const { keyword } = req.query;
+        let records;
+        if (keyword) {
+            records = db.searchDomains(keyword);
+        } else {
+            records = db.getAllDomains();
+        }
+        res.json({ records });
+    } catch (err) {
+        console.error('获取记录失败:', err);
+        res.status(500).json({ error: '获取记录失败' });
+    }
+});
+
+// 获取所有用户
+router.get('/members', (req, res) => {
+    try {
+        const users = db.getAllUsers();
+        const defaultQuota = parseInt(db.getSystemConfig('default_domain_quota') || '10');
+        // 统计每个用户的域名数量和配额
+        const usersWithCount = users.map(u => ({
+            ...u,
+            domainCount: db.countUserDomains(u.id),
+            domainQuota: u.domain_quota !== null ? u.domain_quota : defaultQuota
+        }));
+        res.json({ users: usersWithCount });
+    } catch (err) {
+        console.error('获取用户失败:', err);
+        res.status(500).json({ error: '获取用户失败' });
+    }
+});
+
+// 管理员编辑记录
+router.put('/records/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { recordValue, proxied, remark } = req.body;
+
+        const domain = db.getDomainById(id);
+        if (!domain) {
+            return res.status(404).json({ error: '记录不存在' });
+        }
+
+        if (!recordValue) {
+            return res.status(400).json({ error: '请填写记录值' });
+        }
+
+        // 更新 Cloudflare
+        const cf = getCF(req);
+        const shouldProxy = ['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false;
+        await cf.updateRecord(domain.cf_record_id, {
+            content: recordValue,
+            proxied: shouldProxy
+        });
+
+        // 更新数据库
+        db.updateDomain(id, recordValue, shouldProxy, domain.ttl, remark);
+
+        res.json({ message: '修改成功' });
+    } catch (err) {
+        console.error('管理员编辑记录失败:', err);
+        res.status(500).json({ error: err.message || '修改失败' });
+    }
+});
+
+// 管理员删除记录
+router.delete('/records/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const domain = db.getDomainById(id);
+        if (!domain) {
+            return res.status(404).json({ error: '记录不存在' });
+        }
+
+        // 从 Cloudflare 删除
+        const cf = getCF(req);
+        try {
+            await cf.deleteRecord(domain.cf_record_id);
+        } catch (e) {
+            console.warn('Cloudflare 删除可能已不存在:', e.message);
+        }
+
+        db.deleteDomain(id);
+        db.createNotification(domain.user_id, `⚠️ 您的域名解析记录 ${domain.subdomain} (${domain.record_type}) 已被管理员删除。请确保您的使用符合服务条款，违规行为可能导致账号被封禁。`);
+        res.json({ message: '删除成功' });
+    } catch (err) {
+        console.error('删除记录失败:', err);
+        res.status(500).json({ error: '删除失败' });
+    }
+});
+
+// 修改用户状态
+router.put('/members/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['active', 'disabled'].includes(status)) {
+            return res.status(400).json({ error: '无效的状态值' });
+        }
+
+        const user = db.getUserById(id);
+        if (!user) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+        if (user.role === 'admin') {
+            return res.status(400).json({ error: '不能修改管理员状态' });
+        }
+
+        db.updateUserStatus(id, status);
+
+        const cf = getCF(req);
+        if (status === 'disabled') {
+            // 禁用：从 CF 删除解析但保留 DB 记录（suspended）
+            const domains = db.getDomainsByUser(id);
+            for (const d of domains) {
+                try { await cf.deleteRecord(d.cf_record_id); } catch (e) {}
+            }
+            db.suspendUserDomains(id);
+            db.createNotification(id, '⚠️ 您的账号已被管理员禁用，所有域名解析已停止。如有疑问请联系管理员。');
+        } else if (status === 'active') {
+            // 恢复：重新创建 CF 解析
+            const suspended = db.getSuspendedDomainsByUser(id);
+            const updates = [];
+            for (const d of suspended) {
+                try {
+                    const fullName = `${d.subdomain}.${req.config.site.domain}`;
+                    const record = await cf.createRecord(d.record_type, fullName, d.record_value, d.proxied === 1, d.ttl);
+                    updates.push({ id: d.id, cfRecordId: record.id });
+                } catch (e) { console.warn('恢复解析失败:', e.message); }
+            }
+            if (updates.length) db.restoreUserDomains(id, updates);
+            db.createNotification(id, '✅ 您的账号已恢复正常，域名解析已重新生效。');
+        }
+
+        res.json({ message: `用户已${status === 'active' ? '启用' : '禁用'}` });
+    } catch (err) {
+        console.error('修改用户状态失败:', err);
+        res.status(500).json({ error: '操作失败' });
+    }
+});
+
+// 删除用户
+router.delete('/members/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = db.getUserById(id);
+        if (!user) return res.status(404).json({ error: '用户不存在' });
+        if (user.role === 'admin') return res.status(400).json({ error: '不能删除管理员' });
+
+        const cf = getCF(req);
+        const domains = db.getDomainsByUser(id);
+        for (const d of domains) {
+            try { await cf.deleteRecord(d.cf_record_id); } catch (e) {}
+        }
+
+        db.deleteUser(id);
+        res.json({ message: '用户已删除' });
+    } catch (err) {
+        console.error('删除用户失败:', err);
+        res.status(500).json({ error: '删除失败' });
+    }
+});
+
+// 修改用户密码（管理员）
+router.put('/members/:id/password', (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: '密码长度至少 6 个字符' });
+        }
+
+        const user = db.getUserById(id);
+        if (!user) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+
+        db.updateUserPassword(id, password);
+        res.json({ message: '密码修改成功' });
+    } catch (err) {
+        console.error('修改密码失败:', err);
+        res.status(500).json({ error: '操作失败' });
+    }
+});
+
+// 统计数据
+router.get('/stats', (req, res) => {
+    try {
+        const users = db.getAllUsers();
+        const records = db.getAllDomains();
+        res.json({
+            totalUsers: users.length,
+            totalRecords: records.length,
+            activeRecords: records.filter(r => r.status === 'active').length
+        });
+    } catch (err) {
+        console.error('获取统计失败:', err);
+        res.status(500).json({ error: '获取统计失败' });
+    }
+});
+
+// 修改用户域名配额
+router.put('/members/:id/quota', (req, res) => {
+    try {
+        const { id } = req.params;
+        const { quota } = req.body;
+
+        const user = db.getUserById(id);
+        if (!user) {
+            return res.status(404).json({ error: '用户不存在' });
+        }
+        if (user.role === 'admin') {
+            return res.status(400).json({ error: '不能修改管理员配额' });
+        }
+
+        // quota 为 null 表示使用默认配额
+        const newQuota = quota === null || quota === '' ? null : parseInt(quota);
+        if (newQuota !== null && (isNaN(newQuota) || newQuota < 0)) {
+            return res.status(400).json({ error: '配额必须是有效的数字' });
+        }
+
+        db.updateUserDomainQuota(id, newQuota);
+        res.json({ message: '配额修改成功' });
+    } catch (err) {
+        console.error('修改配额失败:', err);
+        res.status(500).json({ error: '修改配额失败' });
+    }
+});
+
+// 获取系统设置
+router.get('/settings', (req, res) => {
+    try {
+        const config = db.getAllSystemConfig();
+        res.json({ settings: config });
+    } catch (err) {
+        console.error('获取系统设置失败:', err);
+        res.status(500).json({ error: '获取系统设置失败' });
+    }
+});
+
+// 更新系统设置
+router.put('/settings', (req, res) => {
+    try {
+        const { allowRegister, allowOauthRegister, allowGithubRegister, defaultDomainQuota } = req.body;
+
+        if (allowRegister !== undefined) {
+            db.updateSystemConfig('allow_register', allowRegister ? 'true' : 'false');
+        }
+
+        if (allowOauthRegister !== undefined) {
+            db.updateSystemConfig('allow_oauth_register', allowOauthRegister ? 'true' : 'false');
+        }
+
+        if (allowGithubRegister !== undefined) {
+            db.updateSystemConfig('allow_github_register', allowGithubRegister ? 'true' : 'false');
+        }
+
+        if (defaultDomainQuota !== undefined) {
+            const quota = parseInt(defaultDomainQuota);
+            if (isNaN(quota) || quota < 0) {
+                return res.status(400).json({ error: '默认配额必须是有效的正整数' });
+            }
+            db.updateSystemConfig('default_domain_quota', String(quota));
+        }
+
+        res.json({ message: '设置保存成功' });
+    } catch (err) {
+        console.error('更新系统设置失败:', err);
+        res.status(500).json({ error: '更新系统设置失败' });
+    }
+});
+
+// 管理员修改自己的密码
+router.put('/admin/password', (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ error: '请填写完整信息' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: '新密码长度至少 6 个字符' });
+        }
+
+        // 验证旧密码
+        const bcrypt = require('bcryptjs');
+        const currentUser = db.getUserWithPasswordById(req.user.id);
+        if (!bcrypt.compareSync(oldPassword, currentUser.password)) {
+            return res.status(400).json({ error: '原密码错误' });
+        }
+
+        db.updateUserPassword(req.user.id, newPassword);
+
+        res.json({ message: '密码修改成功' });
+    } catch (err) {
+        console.error('修改密码失败:', err);
+        res.status(500).json({ error: '修改密码失败' });
+    }
+});
+
+// 管理员禁用/恢复单个域名记录
+router.put('/records/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        if (!['admin_suspended', 'active'].includes(status)) {
+            return res.status(400).json({ error: '无效的状态值' });
+        }
+        const domain = db.getDomainById(id);
+        if (!domain) return res.status(404).json({ error: '记录不存在' });
+
+        const cf = getCF(req);
+        if (status === 'admin_suspended') {
+            try { await cf.deleteRecord(domain.cf_record_id); } catch (e) {}
+            db.adminSuspendDomain(id);
+            db.createNotification(domain.user_id, `⚠️ 您的域名 ${domain.subdomain} (${domain.record_type}) 已被管理员暂停解析。`);
+        } else {
+            const fullName = `${domain.subdomain}.${req.config.site.domain}`;
+            const record = await cf.createRecord(domain.record_type, fullName, domain.record_value, domain.proxied === 1, domain.ttl);
+            db.adminRestoreDomain(id, record.id);
+            db.createNotification(domain.user_id, `✅ 您的域名 ${domain.subdomain} (${domain.record_type}) 已被管理员恢复解析。`);
+        }
+        res.json({ message: status === 'admin_suspended' ? '域名已暂停' : '域名已恢复' });
+    } catch (err) {
+        console.error('修改域名状态失败:', err);
+        res.status(500).json({ error: err.message || '操作失败' });
+    }
+});
+
+module.exports = router;
