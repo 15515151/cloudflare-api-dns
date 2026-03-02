@@ -1,23 +1,27 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../lib/database');
+const { generateState, verifyState, oauthRedirectHtml } = require('../lib/helpers');
 
 const router = express.Router();
 
 router.get('/login', (req, res) => {
     const gh = req.config.github;
     if (!gh || !gh.clientId) return res.status(400).json({ error: 'GitHub OAuth 未配置' });
+    const state = generateState(req.config.site.jwtSecret);
     const params = new URLSearchParams({
         client_id: gh.clientId,
         redirect_uri: gh.redirectUri,
-        scope: 'user:email'
+        scope: 'user:email',
+        state
     });
     res.redirect(`https://github.com/login/oauth/authorize?${params}`);
 });
 
 router.get('/callback', async (req, res) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
     if (!code) return res.redirect('/login.html?error=no_code');
+    if (!verifyState(state, req.config.site.jwtSecret)) return res.redirect('/login.html?error=invalid_state');
 
     const gh = req.config.github;
     try {
@@ -60,12 +64,7 @@ router.get('/callback', async (req, res) => {
 
         const token = jwt.sign({ id: localUser.id }, req.config.site.jwtSecret, { expiresIn: '7d' });
         const userData = { id: localUser.id, username: localUser.username, email: localUser.email, role: localUser.role, status: localUser.status };
-
-        res.send(`<!DOCTYPE html><html><head><title>登录中...</title></head><body><script>
-  localStorage.setItem('token', '${token}');
-  localStorage.setItem('user', '${JSON.stringify(userData).replace(/'/g, "\\'")}');
-  window.location.href = '/panel.html';
-</script></body></html>`);
+        res.send(oauthRedirectHtml(token, userData));
     } catch (err) {
         console.error('GitHub OAuth 回调失败:', err);
         res.redirect('/login.html?error=oauth_failed');

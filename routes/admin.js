@@ -1,8 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../lib/database');
-const CloudflareAPI = require('../lib/cloudflare');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { getCF } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -10,24 +10,23 @@ const router = express.Router();
 router.use(authenticate);
 router.use(requireAdmin);
 
-function getCF(req, domain) {
-    const zoneId = domain
-        ? ((req.config.domains || []).find(d => d.domain === domain && d.enabled) || {}).zoneId || req.config.cloudflare.zoneId
-        : req.config.cloudflare.zoneId;
-    return new CloudflareAPI(req.config.cloudflare.apiToken, zoneId);
-}
-
 // 获取所有域名记录
 router.get('/records', (req, res) => {
     try {
         const { keyword } = req.query;
-        let records;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 50));
+        const offset = (page - 1) * pageSize;
+
+        let records, total;
         if (keyword) {
-            records = db.searchDomains(keyword);
+            total = db.countSearchDomains(keyword);
+            records = db.searchDomains(keyword, pageSize, offset);
         } else {
-            records = db.getAllDomains();
+            total = db.countAllDomains();
+            records = db.getAllDomains(pageSize, offset);
         }
-        res.json({ records });
+        res.json({ records, total, page, pageSize });
     } catch (err) {
         console.error('获取记录失败:', err);
         res.status(500).json({ error: '获取记录失败' });
@@ -131,12 +130,11 @@ router.put('/members/:id/status', async (req, res) => {
 
         db.updateUserStatus(id, status);
 
-        const cf = getCF(req);
         if (status === 'disabled') {
             // 禁用：从 CF 删除解析但保留 DB 记录（suspended）
             const domains = db.getDomainsByUser(id);
             for (const d of domains) {
-                try { await cf.deleteRecord(d.cf_record_id); } catch (e) {}
+                try { await getCF(req, d.domain).deleteRecord(d.cf_record_id); } catch (e) { }
             }
             db.suspendUserDomains(id);
             db.createNotification(id, '⚠️ 您的账号已被管理员禁用，所有域名解析已停止。如有疑问请联系管理员。');
@@ -146,8 +144,8 @@ router.put('/members/:id/status', async (req, res) => {
             const updates = [];
             for (const d of suspended) {
                 try {
-                    const fullName = `${d.subdomain}.${req.config.site.domain}`;
-                    const record = await cf.createRecord(d.record_type, fullName, d.record_value, d.proxied === 1, d.ttl);
+                    const fullName = `${d.subdomain}.${d.domain}`;
+                    const record = await getCF(req, d.domain).createRecord(d.record_type, fullName, d.record_value, d.proxied === 1, d.ttl);
                     updates.push({ id: d.id, cfRecordId: record.id });
                 } catch (e) { console.warn('恢复解析失败:', e.message); }
             }
@@ -170,10 +168,9 @@ router.delete('/members/:id', async (req, res) => {
         if (!user) return res.status(404).json({ error: '用户不存在' });
         if (user.role === 'admin') return res.status(400).json({ error: '不能删除管理员' });
 
-        const cf = getCF(req);
         const domains = db.getDomainsByUser(id);
         for (const d of domains) {
-            try { await cf.deleteRecord(d.cf_record_id); } catch (e) {}
+            try { await getCF(req, d.domain).deleteRecord(d.cf_record_id); } catch (e) { }
         }
 
         db.deleteUser(id);
@@ -190,8 +187,8 @@ router.put('/members/:id/password', (req, res) => {
         const { id } = req.params;
         const { password } = req.body;
 
-        if (!password || password.length < 6) {
-            return res.status(400).json({ error: '密码长度至少 6 个字符' });
+        if (!password || password.length < 6 || password.length > 64) {
+            return res.status(400).json({ error: '密码长度需要 6-64 个字符' });
         }
 
         const user = db.getUserById(id);
@@ -210,13 +207,10 @@ router.put('/members/:id/password', (req, res) => {
 // 统计数据
 router.get('/stats', (req, res) => {
     try {
-        const users = db.getAllUsers();
-        const records = db.getAllDomains();
-        res.json({
-            totalUsers: users.length,
-            totalRecords: records.length,
-            activeRecords: records.filter(r => r.status === 'active').length
-        });
+        const totalUsers = db.countAllUsers();
+        const totalRecords = db.countAllDomains();
+        const activeRecords = db.countActiveDomains();
+        res.json({ totalUsers, totalRecords, activeRecords });
     } catch (err) {
         console.error('获取统计失败:', err);
         res.status(500).json({ error: '获取统计失败' });
@@ -302,8 +296,8 @@ router.put('/admin/password', (req, res) => {
         if (!oldPassword || !newPassword) {
             return res.status(400).json({ error: '请填写完整信息' });
         }
-        if (newPassword.length < 6) {
-            return res.status(400).json({ error: '新密码长度至少 6 个字符' });
+        if (newPassword.length < 6 || newPassword.length > 64) {
+            return res.status(400).json({ error: '新密码长度需要 6-64 个字符' });
         }
 
         // 验证旧密码
@@ -333,13 +327,13 @@ router.put('/records/:id/status', async (req, res) => {
         const domain = db.getDomainById(id);
         if (!domain) return res.status(404).json({ error: '记录不存在' });
 
-        const cf = getCF(req);
+        const cf = getCF(req, domain.domain);
         if (status === 'admin_suspended') {
-            try { await cf.deleteRecord(domain.cf_record_id); } catch (e) {}
+            try { await cf.deleteRecord(domain.cf_record_id); } catch (e) { }
             db.adminSuspendDomain(id);
             db.createNotification(domain.user_id, `⚠️ 您的域名 ${domain.subdomain} (${domain.record_type}) 已被管理员暂停解析。`);
         } else {
-            const fullName = `${domain.subdomain}.${req.config.site.domain}`;
+            const fullName = `${domain.subdomain}.${domain.domain}`;
             const record = await cf.createRecord(domain.record_type, fullName, domain.record_value, domain.proxied === 1, domain.ttl);
             db.adminRestoreDomain(id, record.id);
             db.createNotification(domain.user_id, `✅ 您的域名 ${domain.subdomain} (${domain.record_type}) 已被管理员恢复解析。`);

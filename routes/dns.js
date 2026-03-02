@@ -1,24 +1,13 @@
 const express = require('express');
 const db = require('../lib/database');
-const CloudflareAPI = require('../lib/cloudflare');
 const { authenticate } = require('../middleware/auth');
+const { getCF } = require('../lib/helpers');
 
 const router = express.Router();
 
 // 所有 DNS 路由都需要登录
 router.use(authenticate);
 
-// 根据域名获取对应的 zoneId，找不到则用默认
-function getZoneId(req, domain) {
-    const domains = req.config.domains || [];
-    const found = domains.find(d => d.domain === domain && d.enabled);
-    return found ? found.zoneId : req.config.cloudflare.zoneId;
-}
-
-function getCF(req, domain) {
-    const zoneId = domain ? getZoneId(req, domain) : req.config.cloudflare.zoneId;
-    return new CloudflareAPI(req.config.cloudflare.apiToken, zoneId);
-}
 
 // 验证域名是否在启用列表中
 function isEnabledDomain(req, domain) {
@@ -102,9 +91,15 @@ router.post('/records', async (req, res) => {
             return res.status(400).json({ error: '请填写完整信息' });
         }
 
-        // 验证子域名格式
-        if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
-            return res.status(400).json({ error: '子域名格式不正确，仅允许字母、数字和连字符' });
+        // 验证子域名格式和长度
+        if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain) || subdomain.length > 63) {
+            return res.status(400).json({ error: '子域名格式不正确，仅允许字母、数字和连字符，且不超过63个字符' });
+        }
+
+        // 禁止的子域名
+        const reserved = ['www', 'mail', 'ftp', 'ns1', 'ns2', 'admin', 'api', 'mx', 'smtp', 'pop', 'imap', '@'];
+        if (reserved.includes(subdomain.toLowerCase())) {
+            return res.status(400).json({ error: '该子域名为保留域名' });
         }
 
         // 验证记录类型
@@ -114,11 +109,32 @@ router.post('/records', async (req, res) => {
         }
 
         // 验证记录值
-        if (recordType === 'A' && !/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(recordValue)) {
-            return res.status(400).json({ error: 'A 记录值必须是有效的 IPv4 地址' });
+        if (recordType === 'A') {
+            const parts = recordValue.split('.');
+            if (parts.length !== 4 || !parts.every(p => /^\d+$/.test(p) && parseInt(p) <= 255)) {
+                return res.status(400).json({ error: 'A 记录值必须是有效的 IPv4 地址' });
+            }
         }
-        if (recordType === 'AAAA' && !/^[0-9a-fA-F:]+$/.test(recordValue)) {
-            return res.status(400).json({ error: 'AAAA 记录值必须是有效的 IPv6 地址' });
+        if (recordType === 'AAAA') {
+            // 使用 URL API 验证 IPv6 地址
+            try { new URL(`http://[${recordValue}]`); } catch {
+                return res.status(400).json({ error: 'AAAA 记录值必须是有效的 IPv6 地址' });
+            }
+        }
+        if (recordType === 'CNAME') {
+            if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-\.]*[a-zA-Z0-9])?$/.test(recordValue) || recordValue.length > 253) {
+                return res.status(400).json({ error: 'CNAME 记录值必须是有效的域名' });
+            }
+        }
+        if (recordType === 'MX') {
+            if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-\.]*[a-zA-Z0-9])?$/.test(recordValue) || recordValue.length > 253) {
+                return res.status(400).json({ error: 'MX 记录值必须是有效的域名' });
+            }
+        }
+        if (recordType === 'TXT') {
+            if (recordValue.length > 255) {
+                return res.status(400).json({ error: 'TXT 记录值不能超过 255 个字符' });
+            }
         }
 
         // 检查额度 - 优先使用用户个人配额，否则使用默认配额
@@ -146,12 +162,6 @@ router.post('/records', async (req, res) => {
             }
         } catch (e) {
             console.warn('Cloudflare 预检查失败:', e.message);
-        }
-
-        // 禁止的子域名
-        const reserved = ['www', 'mail', 'ftp', 'ns1', 'ns2', 'admin', 'api', 'mx', 'smtp', 'pop', 'imap', '@'];
-        if (reserved.includes(subdomain.toLowerCase())) {
-            return res.status(400).json({ error: '该子域名为保留域名' });
         }
 
         // 调用 Cloudflare API 创建记录（cf 和 fullDomain 已在上面声明）

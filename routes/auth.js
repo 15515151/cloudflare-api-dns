@@ -29,8 +29,8 @@ router.post('/register', (req, res) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return res.status(400).json({ error: '邮箱格式不正确' });
         }
-        if (password.length < 6) {
-            return res.status(400).json({ error: '密码长度至少 6 个字符' });
+        if (password.length < 8 || password.length > 64 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+            return res.status(400).json({ error: '密码长度需要 8-64 个字符，且必须包含字母和数字' });
         }
 
         // 检查用户名是否已存在
@@ -107,8 +107,8 @@ router.put('/password', authenticate, (req, res) => {
         if (!oldPassword || !newPassword) {
             return res.status(400).json({ error: '请填写完整信息' });
         }
-        if (newPassword.length < 6) {
-            return res.status(400).json({ error: '新密码长度至少 6 个字符' });
+        if (newPassword.length < 8 || newPassword.length > 64 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+            return res.status(400).json({ error: '新密码长度需要 8-64 个字符，且必须包含字母和数字' });
         }
 
         // 验证旧密码
