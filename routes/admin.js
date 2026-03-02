@@ -10,8 +10,11 @@ const router = express.Router();
 router.use(authenticate);
 router.use(requireAdmin);
 
-function getCF(req) {
-    return new CloudflareAPI(req.config.cloudflare.apiToken, req.config.cloudflare.zoneId);
+function getCF(req, domain) {
+    const zoneId = domain
+        ? ((req.config.domains || []).find(d => d.domain === domain && d.enabled) || {}).zoneId || req.config.cloudflare.zoneId
+        : req.config.cloudflare.zoneId;
+    return new CloudflareAPI(req.config.cloudflare.apiToken, zoneId);
 }
 
 // 获取所有域名记录
@@ -65,7 +68,7 @@ router.put('/records/:id', async (req, res) => {
         }
 
         // 更新 Cloudflare
-        const cf = getCF(req);
+        const cf = getCF(req, domain.domain);
         const shouldProxy = ['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false;
         await cf.updateRecord(domain.cf_record_id, {
             content: recordValue,
@@ -92,7 +95,7 @@ router.delete('/records/:id', async (req, res) => {
         }
 
         // 从 Cloudflare 删除
-        const cf = getCF(req);
+        const cf = getCF(req, domain.domain);
         try {
             await cf.deleteRecord(domain.cf_record_id);
         } catch (e) {

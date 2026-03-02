@@ -56,7 +56,7 @@
         <div class="domain-input-group">
           <input type="text" id="subdomainInput" placeholder="输入子域名" oninput="checkDomain()" autocomplete="off"
             spellcheck="false">
-          <span class="domain-suffix" id="domainSuffix">.example.com</span>
+          <select id="domainSelect" class="domain-suffix" onchange="checkDomain()" style="cursor:pointer;padding:0 8px;border:none;background:transparent;font-size:inherit"></select>
         </div>
         <div class="domain-check-result" id="checkResult"></div>
         <div style="margin-top: 16px;">
@@ -219,9 +219,18 @@
     async function init() {
       try {
         siteConfig = await api.getConfig();
-        document.getElementById('domainSuffix').textContent = '.' + siteConfig.domain;
         document.getElementById('siteTitle').textContent = siteConfig.siteName;
         document.title = siteConfig.siteName + ' - 免费二级域名申请';
+
+        // 初始化域名下拉框
+        const domainSelect = document.getElementById('domainSelect');
+        const domains = siteConfig.domains || [siteConfig.domain];
+        domains.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = '.' + d;
+          domainSelect.appendChild(opt);
+        });
 
         // 根据注册开关显示/隐藏注册按钮
         if (!siteConfig.allowRegister) {
@@ -246,6 +255,13 @@
         if (el) el.style.display = 'block';
         const btn = document.getElementById('githubLoginBtn');
         if (btn) btn.style.display = '';
+      }
+
+      // 处理 OAuth 回调错误
+      const urlError = new URLSearchParams(window.location.search).get('error');
+      if (urlError === 'registration_closed') {
+        showToast('管理员暂时关闭了注册', 'error');
+        history.replaceState(null, '', '/');
       }
     }
 
@@ -334,6 +350,7 @@
       }
 
       checkTimer = setTimeout(async () => {
+        const selectedDomain = document.getElementById('domainSelect').value;
         if (!api.isLoggedIn()) {
           result.className = 'domain-check-result error';
           result.textContent = '请先登录或注册账号';
@@ -341,13 +358,13 @@
         }
 
         try {
-          const data = await api.checkSubdomain(input);
+          const data = await api.checkSubdomain(input, selectedDomain);
           if (data.available) {
             result.className = 'domain-check-result available';
-            result.textContent = `✓ ${input}.${siteConfig.domain} 可以注册`;
+            result.textContent = `✓ ${input}.${selectedDomain} 可以注册`;
           } else {
             result.className = 'domain-check-result unavailable';
-            result.textContent = `✕ ${input}.${siteConfig.domain} 已被占用`;
+            result.textContent = `✕ ${input}.${selectedDomain} 已被占用`;
           }
         } catch (e) {
           result.className = 'domain-check-result error';
@@ -370,12 +387,14 @@
         return;
       }
 
-      document.getElementById('applySubdomain').value = subdomain + '.' + siteConfig.domain;
+      const selectedDomain = document.getElementById('domainSelect').value;
+      document.getElementById('applySubdomain').value = subdomain + '.' + selectedDomain;
       openModal('applyModal');
     }
 
     async function submitApply() {
       const subdomain = document.getElementById('subdomainInput').value.trim().toLowerCase();
+      const domain = document.getElementById('domainSelect').value;
       const recordType = document.getElementById('applyType').value;
       const recordValue = document.getElementById('applyValue').value.trim();
       const remark = document.getElementById('applyRemark').value.trim();
@@ -387,7 +406,7 @@
       }
 
       try {
-        await api.createRecord({ subdomain, recordType, recordValue, proxied, remark });
+        await api.createRecord({ subdomain, domain, recordType, recordValue, proxied, remark });
         closeModalById('applyModal');
         showToast('域名申请成功！', 'success');
         document.getElementById('subdomainInput').value = '';

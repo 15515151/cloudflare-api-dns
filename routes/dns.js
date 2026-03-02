@@ -8,15 +8,34 @@ const router = express.Router();
 // 所有 DNS 路由都需要登录
 router.use(authenticate);
 
-// 获取 Cloudflare API 实例
-function getCF(req) {
-    return new CloudflareAPI(req.config.cloudflare.apiToken, req.config.cloudflare.zoneId);
+// 根据域名获取对应的 zoneId，找不到则用默认
+function getZoneId(req, domain) {
+    const domains = req.config.domains || [];
+    const found = domains.find(d => d.domain === domain && d.enabled);
+    return found ? found.zoneId : req.config.cloudflare.zoneId;
+}
+
+function getCF(req, domain) {
+    const zoneId = domain ? getZoneId(req, domain) : req.config.cloudflare.zoneId;
+    return new CloudflareAPI(req.config.cloudflare.apiToken, zoneId);
+}
+
+// 验证域名是否在启用列表中
+function isEnabledDomain(req, domain) {
+    const domains = req.config.domains || [];
+    if (domains.length === 0) return domain === req.config.site.domain;
+    return domains.some(d => d.domain === domain && d.enabled);
 }
 
 // 检查子域名是否可用（同时检查本地数据库和 Cloudflare）
 router.get('/check/:subdomain', async (req, res) => {
     try {
         const { subdomain } = req.params;
+        const domain = req.query.domain || req.config.site.domain;
+
+        if (!isEnabledDomain(req, domain)) {
+            return res.status(400).json({ error: '该域名不可用', available: false });
+        }
 
         // 验证子域名格式
         if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
@@ -30,14 +49,14 @@ router.get('/check/:subdomain', async (req, res) => {
         }
 
         // 1. 检查本地数据库
-        const existing = db.getDomainBySubdomain(subdomain);
+        const existing = db.getDomainBySubdomain(subdomain, domain);
         if (existing) {
             return res.json({ available: false, subdomain, source: 'local' });
         }
 
         // 2. 检查 Cloudflare 是否已有该记录（防止在 CF 后台手动添加的记录被覆盖）
-        const cf = getCF(req);
-        const fullDomain = `${subdomain}.${req.config.site.domain}`;
+        const cf = getCF(req, domain);
+        const fullDomain = `${subdomain}.${domain}`;
         try {
             const cfRecords = await cf.listRecords({ name: fullDomain });
             if (cfRecords && cfRecords.length > 0) {
@@ -72,6 +91,11 @@ router.get('/records', (req, res) => {
 router.post('/records', async (req, res) => {
     try {
         const { subdomain, recordType, recordValue, proxied, remark } = req.body;
+        const domain = req.body.domain || req.config.site.domain;
+
+        if (!isEnabledDomain(req, domain)) {
+            return res.status(400).json({ error: '该域名不可用' });
+        }
 
         // 验证参数
         if (!subdomain || !recordType || !recordValue) {
@@ -107,14 +131,14 @@ router.post('/records', async (req, res) => {
         }
 
         // 检查子域名是否已存在（本地数据库）
-        const existing = db.getDomainBySubdomain(subdomain);
+        const existing = db.getDomainBySubdomain(subdomain, domain);
         if (existing) {
             return res.status(400).json({ error: '该子域名已被占用' });
         }
 
         // 检查子域名是否已存在（Cloudflare）
-        const cf = getCF(req);
-        const fullDomain = `${subdomain}.${req.config.site.domain}`;
+        const cf = getCF(req, domain);
+        const fullDomain = `${subdomain}.${domain}`;
         try {
             const cfRecords = await cf.listRecords({ name: fullDomain });
             if (cfRecords && cfRecords.length > 0) {
@@ -137,7 +161,7 @@ router.post('/records', async (req, res) => {
 
         // 保存到数据库
         const id = db.createDomain(
-            req.user.id, subdomain, recordType, recordValue,
+            req.user.id, subdomain, domain, recordType, recordValue,
             cfRecord.id, shouldProxy, 1, remark
         );
 
@@ -146,6 +170,7 @@ router.post('/records', async (req, res) => {
             record: {
                 id,
                 subdomain,
+                domain,
                 fullDomain,
                 recordType,
                 recordValue,
@@ -181,7 +206,7 @@ router.put('/records/:id', async (req, res) => {
         }
 
         // 更新 Cloudflare
-        const cf = getCF(req);
+        const cf = getCF(req, domain.domain);
         await cf.updateRecord(domain.cf_record_id, {
             content: recordValue,
             proxied: ['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false
@@ -214,7 +239,7 @@ router.delete('/records/:id', async (req, res) => {
         }
 
         // 从 Cloudflare 删除
-        const cf = getCF(req);
+        const cf = getCF(req, domain.domain);
         try {
             await cf.deleteRecord(domain.cf_record_id);
         } catch (e) {

@@ -40,8 +40,15 @@ app.get('/api/config', (req, res) => {
   const allowRegister = db.getSystemConfig('allow_register') === 'true';
   const allowOauthRegister = db.getSystemConfig('allow_oauth_register') === 'true';
   const defaultQuota = parseInt(db.getSystemConfig('default_domain_quota') || '10');
+  const enabledDomains = (config.domains || [])
+    .filter(d => d.enabled)
+    .map(d => d.domain);
+  // 兼容旧配置：若没有 domains 列表则用 site.domain
+  if (enabledDomains.length === 0) enabledDomains.push(config.site.domain);
+
   res.json({
     domain: config.site.domain,
+    domains: enabledDomains,
     siteName: config.site.siteName,
     allowedRecordTypes: config.limits.allowedRecordTypes,
     maxDomainsPerUser: defaultQuota,

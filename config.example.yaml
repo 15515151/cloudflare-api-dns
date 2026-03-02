@@ -2,8 +2,17 @@
 cloudflare:
   # API Token (需要 Zone.DNS 编辑权限)
   apiToken: "your-cloudflare-api-token"
-  # Zone ID (主域名对应的 Zone ID)
+  # 默认 Zone ID（兜底用，建议在 domains 列表中配置）
   zoneId: "your-zone-id"
+
+# 多域名配置（enabled: false 则不对外开放，但保留配置）
+domains:
+  - domain: "example.com"
+    zoneId: "your-zone-id"
+    enabled: true
+  # - domain: "example2.com"
+  #   zoneId: "your-zone-id-2"
+  #   enabled: false
 
 # 站点设置
 site:

@@ -77,6 +77,7 @@
                 <div class="form-group">
                     <label>子域名</label>
                     <input type="text" class="form-control" id="addSubdomain" placeholder="输入子域名">
+                    <select class="form-control" id="addDomainSelect" style="margin-top:8px"></select>
                     <div class="domain-check-result" id="addCheckResult" style="margin-top:8px"></div>
                 </div>
                 <div class="form-group">
@@ -227,6 +228,15 @@
                 document.getElementById('navUsername').textContent = api.user.username;
                 document.getElementById('statLimit').textContent = siteConfig.maxDomainsPerUser;
 
+                // 初始化域名下拉框
+                const sel = document.getElementById('addDomainSelect');
+                const domains = siteConfig.domains || [siteConfig.domain];
+                domains.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d; opt.textContent = '.' + d;
+                    sel.appendChild(opt);
+                });
+
                 if (api.isAdmin()) {
                     document.getElementById('navAdminLink').style.display = '';
                 }
@@ -285,7 +295,7 @@
               <tbody>
                 ${data.records.map(r => `
                   <tr>
-                    <td><strong>${r.subdomain}.${siteConfig.domain}</strong></td>
+                    <td><strong>${r.subdomain}.${r.domain || siteConfig.domain}</strong></td>
                     <td><span class="badge badge-info">${r.record_type}</span></td>
                     <td style="font-family:monospace;font-size:0.85rem">${r.record_value}</td>
                     <td>${r.proxied ? '<span class="badge badge-success">已开启</span>' : '<span class="badge badge-warning">关闭</span>'}</td>
@@ -366,9 +376,10 @@
             if (!v) { result.style.display = 'none'; return; }
             addCheckTimer = setTimeout(async () => {
                 try {
-                    const data = await api.checkSubdomain(v);
+                    const data = await api.checkSubdomain(v, document.getElementById('addDomainSelect').value);
+                    const d = document.getElementById('addDomainSelect').value;
                     result.className = 'domain-check-result ' + (data.available ? 'available' : 'unavailable');
-                    result.textContent = data.available ? `✓ ${v}.${siteConfig.domain} 可用` : `✕ ${v}.${siteConfig.domain} 已被占用`;
+                    result.textContent = data.available ? `✓ ${v}.${d} 可用` : `✕ ${v}.${d} 已被占用`;
                 } catch (e) {
                     result.className = 'domain-check-result error';
                     result.textContent = e.message;
@@ -378,6 +389,7 @@
 
         async function submitAdd() {
             const subdomain = document.getElementById('addSubdomain').value.trim().toLowerCase();
+            const domain = document.getElementById('addDomainSelect').value;
             const recordType = document.getElementById('addType').value;
             const recordValue = document.getElementById('addValue').value.trim();
             const remark = document.getElementById('addRemark').value.trim();
@@ -386,7 +398,7 @@
             if (!subdomain || !recordValue) { showToast('请填写完整信息', 'error'); return; }
 
             try {
-                await api.createRecord({ subdomain, recordType, recordValue, proxied, remark });
+                await api.createRecord({ subdomain, domain, recordType, recordValue, proxied, remark });
                 closeModalById('addModal');
                 showToast('添加成功！', 'success');
                 await loadRecords();

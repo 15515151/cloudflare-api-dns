@@ -94,8 +94,9 @@ class ApiClient {
     }
 
     // DNS
-    async checkSubdomain(subdomain) {
-        return this.request('GET', `/dns/check/${encodeURIComponent(subdomain)}`);
+    async checkSubdomain(subdomain, domain) {
+        const query = domain ? `?domain=${encodeURIComponent(domain)}` : '';
+        return this.request('GET', `/dns/check/${encodeURIComponent(subdomain)}${query}`);
     }
 
     async getRecords() {
