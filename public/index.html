@@ -104,16 +104,18 @@
         <button class="modal-close" onclick="closeModalById('loginModal')">&times;</button>
       </div>
       <div class="modal-body">
+        <form onsubmit="doLogin();return false;" autocomplete="on">
         <div class="form-group">
           <label>用户名</label>
-          <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名">
+          <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
         </div>
         <div class="form-group">
           <label>密码</label>
           <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码"
-            onkeydown="if(event.key==='Enter')doLogin()">
+            autocomplete="current-password">
         </div>
-        <button class="btn btn-primary" style="width:100%" onclick="doLogin()">登 录</button>
+        <button type="submit" class="btn btn-primary" style="width:100%">登 录</button>
+        </form>
         <div id="oauthSection" style="display:none">
           <div style="display:flex;align-items:center;gap:12px;margin:16px 0 12px">
             <div style="flex:1;height:1px;background:var(--border-color)"></div>
@@ -198,7 +200,7 @@
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="applyProxied">
-            开启 Cloudflare 代理（仅 A/AAAA/CNAME）
+            开启 Cloudflare 代理（小黄云）（仅 A/AAAA/CNAME）
           </label>
         </div>
       </div>
