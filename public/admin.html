@@ -65,7 +65,9 @@
                 <div class="card-header">
                     <h2>记录列表</h2>
                     <div class="search-bar" style="margin:0">
-                        <input type="text" class="form-control" id="searchInput" placeholder="搜索域名、记录值、用户名..."
+                        <input type="text" style="display:none" autocomplete="username">
+                        <input type="password" style="display:none" autocomplete="current-password">
+                        <input type="search" class="form-control" id="searchInput" placeholder="搜索域名、记录值、用户名..."
                             oninput="debounceSearch()" style="max-width:300px" autocomplete="off">
                     </div>
                 </div>
@@ -192,11 +194,11 @@
                 </div>
                 <div class="form-group">
                     <label>新密码</label>
-                    <input type="password" class="form-control" id="pwdNewPassword" placeholder="至少 6 个字符">
+                    <input type="password" class="form-control" id="pwdNewPassword" autocomplete="new-password" placeholder="至少 6 个字符">
                 </div>
                 <div class="form-group">
                     <label>确认密码</label>
-                    <input type="password" class="form-control" id="pwdConfirm" placeholder="再次输入新密码">
+                    <input type="password" class="form-control" id="pwdConfirm" autocomplete="new-password" placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
@@ -242,15 +244,15 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>原密码</label>
-                    <input type="password" class="form-control" id="adminOldPassword" placeholder="请输入原密码">
+                    <input type="password" class="form-control" id="adminOldPassword" autocomplete="new-password" placeholder="请输入原密码">
                 </div>
                 <div class="form-group">
                     <label>新密码</label>
-                    <input type="password" class="form-control" id="adminNewPassword" placeholder="至少6个字符">
+                    <input type="password" class="form-control" id="adminNewPassword" autocomplete="new-password" placeholder="至少6个字符">
                 </div>
                 <div class="form-group">
                     <label>确认新密码</label>
-                    <input type="password" class="form-control" id="adminConfirmPassword" placeholder="再次输入新密码">
+                    <input type="password" class="form-control" id="adminConfirmPassword" autocomplete="new-password" placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
