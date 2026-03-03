@@ -83,4 +83,7 @@ const PORT = config.site.port || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 域名分发站已启动: http://localhost:${PORT}`);
   console.log(`📌 主域名: ${config.site.domain}`);
+
+  // 启动时清理遗留验证记录
+  require('./scripts/clean_verifications')(config);
 });
