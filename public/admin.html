@@ -19,11 +19,13 @@
                 <span id="siteTitle">域名分发站</span>
             </a>
             <ul class="navbar-nav">
-                <a href="/" class="btn btn-secondary btn-sm">首页</a>
-                <a href="/panel.html" class="btn btn-secondary btn-sm">控制面板</a>
-                <a href="/admin.html" class="btn btn-secondary btn-sm active">管理后台</a>
-                <button onclick="openAdminPasswordModal()" class="btn btn-secondary btn-sm">修改密码</button>
-                <button onclick="api.logout()" class="btn btn-secondary btn-sm">退出</button>
+                <a href="/" class="btn btn-secondary btn-sm" data-i18n="nav.home">首页</a>
+                <a href="/panel.html" class="btn btn-secondary btn-sm" data-i18n="nav.panel">控制面板</a>
+                <a href="/admin.html" class="btn btn-secondary btn-sm active" data-i18n="nav.admin">管理后台</a>
+                <button onclick="openAdminPasswordModal()" class="btn btn-secondary btn-sm"
+                    data-i18n="nav.changePassword">修改密码</button>
+                <button onclick="api.logout()" class="btn btn-secondary btn-sm" data-i18n="nav.logout">退出</button>
+                <button id="langToggleBtn" class="btn btn-secondary btn-sm" title="Language">EN</button>
                 <button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="切换主题">☀️</button>
                 <span id="navUsername" style="color:var(--text-secondary);font-size:0.85rem"></span>
             </ul>
@@ -32,42 +34,44 @@
 
     <div class="container">
         <div class="page-header">
-            <h1>管理后台</h1>
-            <p>管理所有用户和域名记录</p>
+            <h1 data-i18n="admin.heading">管理后台</h1>
+            <p data-i18n="admin.desc">管理所有用户和域名记录</p>
         </div>
 
         <!-- Stats -->
         <div class="stats-grid" id="adminStats">
             <div class="stat-card">
                 <div class="stat-value" id="statUsers">-</div>
-                <div class="stat-label">注册用户</div>
+                <div class="stat-label" data-i18n="admin.statUsers">注册用户</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="statRecords">-</div>
-                <div class="stat-label">域名记录</div>
+                <div class="stat-label" data-i18n="admin.statRecords">域名记录</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="statActive">-</div>
-                <div class="stat-label">活跃记录</div>
+                <div class="stat-label" data-i18n="admin.statActive">活跃记录</div>
             </div>
         </div>
 
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('records', this)">📋 域名记录</button>
-            <button class="tab" onclick="switchTab('users', this)">👥 用户管理</button>
-            <button class="tab" onclick="switchTab('settings', this)">⚙️ 系统设置</button>
+            <button class="tab active" onclick="switchTab('records', this)" data-i18n="admin.tabRecords">📋
+                域名记录</button>
+            <button class="tab" onclick="switchTab('users', this)" data-i18n="admin.tabUsers">👥 用户管理</button>
+            <button class="tab" onclick="switchTab('settings', this)" data-i18n="admin.tabSettings">⚙️ 系统设置</button>
         </div>
 
         <!-- Records Panel -->
         <div id="recordsPanel">
             <div class="card">
                 <div class="card-header">
-                    <h2>记录列表</h2>
+                    <h2 data-i18n="admin.recordList">记录列表</h2>
                     <div class="search-bar" style="margin:0">
                         <input type="text" style="display:none" autocomplete="username">
                         <input type="password" style="display:none" autocomplete="current-password">
-                        <input type="search" class="form-control" id="searchInput" placeholder="搜索域名、记录值、用户名..."
+                        <input type="search" class="form-control" id="searchInput"
+                            data-i18n-placeholder="admin.searchPlaceholder" placeholder="搜索域名、记录值、用户名..."
                             oninput="debounceSearch()" style="max-width:300px" autocomplete="off">
                     </div>
                 </div>
@@ -83,7 +87,7 @@
         <div id="usersPanel" class="hidden">
             <div class="card">
                 <div class="card-header">
-                    <h2>用户列表</h2>
+                    <h2 data-i18n="admin.userList">用户列表</h2>
                 </div>
                 <div class="card-body" id="usersContainer">
                     <div class="loading">
@@ -97,44 +101,46 @@
         <div id="settingsPanel" class="hidden">
             <div class="card">
                 <div class="card-header">
-                    <h2>系统设置</h2>
+                    <h2 data-i18n="settings.title">系统设置</h2>
                 </div>
                 <div class="card-body">
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                             <input type="checkbox" id="allowRegister">
-                            允许账号密码注册
+                            <span data-i18n="settings.allowRegister">允许账号密码注册</span>
                         </label>
-                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，用户将无法通过账号密码注册</p>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px"
+                            data-i18n="settings.allowRegisterHint">关闭后，用户将无法通过账号密码注册</p>
                     </div>
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                             <input type="checkbox" id="allowOauthRegister">
-                            允许 Linux.Do OAuth 注册
+                            <span data-i18n="settings.allowOauth">允许 Linux.Do OAuth 注册</span>
                         </label>
-                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，新用户将无法通过 Linux.Do
-                            登录注册，已有账号不受影响</p>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px"
+                            data-i18n="settings.allowOauthHint">关闭后，新用户将无法通过 Linux.Do 登录注册，已有账号不受影响</p>
                     </div>
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                             <input type="checkbox" id="allowGithubRegister">
-                            允许 GitHub OAuth 注册
+                            <span data-i18n="settings.allowGithub">允许 GitHub OAuth 注册</span>
                         </label>
-                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，新用户将无法通过 GitHub
-                            登录注册，已有账号不受影响</p>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px"
+                            data-i18n="settings.allowGithubHint">关闭后，新用户将无法通过 GitHub 登录注册，已有账号不受影响</p>
                     </div>
                     <div class="form-group">
-                        <label>新用户默认域名配额</label>
+                        <label data-i18n="settings.defaultQuota">新用户默认域名配额</label>
                         <input type="number" class="form-control" id="defaultQuota" min="0" placeholder="默认配额">
-                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">新注册用户的默认域名数量限制，0 表示无限制</p>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px"
+                            data-i18n="settings.defaultQuotaHint">新注册用户的默认域名数量限制，0 表示无限制</p>
                     </div>
-                    <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+                    <button class="btn btn-primary" onclick="saveSettings()" data-i18n="settings.save">保存设置</button>
                 </div>
             </div>
         </div>
 
         <footer class="footer">
-            <p>Powered by Cloudflare DNS API</p>
+            <p data-i18n="powered">Powered by Cloudflare DNS API</p>
         </footer>
     </div>
 
@@ -142,41 +148,43 @@
     <div class="modal-overlay" id="adminEditModal" onclick="closeModal(event,'adminEditModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>编辑记录</h3>
+                <h3 data-i18n="adminEdit.title">编辑记录</h3>
                 <button class="modal-close" onclick="closeModalById('adminEditModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="adminEditId">
                 <div class="form-group">
-                    <label>域名</label>
+                    <label data-i18n="adminEdit.domain">域名</label>
                     <input type="text" class="form-control" id="adminEditDomain" readonly>
                 </div>
                 <div class="form-group">
-                    <label>记录类型</label>
+                    <label data-i18n="adminEdit.type">记录类型</label>
                     <input type="text" class="form-control" id="adminEditType" readonly>
                 </div>
                 <div class="form-group">
-                    <label>所属用户</label>
+                    <label data-i18n="adminEdit.user">所属用户</label>
                     <input type="text" class="form-control" id="adminEditUser" readonly>
                 </div>
                 <div class="form-group">
-                    <label>记录值</label>
-                    <input type="text" class="form-control" id="adminEditValue" placeholder="新的记录值">
+                    <label data-i18n="adminEdit.value">记录值</label>
+                    <input type="text" class="form-control" id="adminEditValue"
+                        data-i18n-placeholder="adminEdit.valuePlaceholder" placeholder="新的记录值">
                 </div>
                 <div class="form-group">
-                    <label>备注</label>
+                    <label data-i18n="adminEdit.remark">备注</label>
                     <input type="text" class="form-control" id="adminEditRemark">
                 </div>
                 <div class="form-group">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                         <input type="checkbox" id="adminEditProxied">
-                        开启 Cloudflare 代理（小黄云）
+                        <span data-i18n="adminEdit.proxy">开启 Cloudflare 代理（小黄云）</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('adminEditModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitAdminEdit()">保存修改</button>
+                <button class="btn btn-secondary" onclick="closeModalById('adminEditModal')"
+                    data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitAdminEdit()" data-i18n="adminEdit.save">保存修改</button>
             </div>
         </div>
     </div>
@@ -185,29 +193,31 @@
     <div class="modal-overlay" id="passwordModal" onclick="closeModal(event,'passwordModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>重置密码</h3>
+                <h3 data-i18n="adminPwd.title">重置密码</h3>
                 <button class="modal-close" onclick="closeModalById('passwordModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="pwdUserId">
                 <div class="form-group">
-                    <label>用户</label>
+                    <label data-i18n="adminPwd.user">用户</label>
                     <input type="text" class="form-control" id="pwdUsername" readonly>
                 </div>
                 <div class="form-group">
-                    <label>新密码</label>
+                    <label data-i18n="adminPwd.newPassword">新密码</label>
                     <input type="password" class="form-control" id="pwdNewPassword" autocomplete="new-password"
-                        placeholder="至少 6 个字符">
+                        data-i18n-placeholder="adminPwd.newPasswordPlaceholder" placeholder="至少 6 个字符">
                 </div>
                 <div class="form-group">
-                    <label>确认密码</label>
+                    <label data-i18n="adminPwd.confirmPassword">确认密码</label>
                     <input type="password" class="form-control" id="pwdConfirm" autocomplete="new-password"
-                        placeholder="再次输入新密码">
+                        data-i18n-placeholder="adminPwd.confirmPlaceholder" placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('passwordModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitPasswordReset()">确认重置</button>
+                <button class="btn btn-secondary" onclick="closeModalById('passwordModal')"
+                    data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitPasswordReset()"
+                    data-i18n="adminPwd.submit">确认重置</button>
             </div>
         </div>
     </div>
@@ -216,24 +226,26 @@
     <div class="modal-overlay" id="quotaModal" onclick="closeModal(event,'quotaModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>修改域名配额</h3>
+                <h3 data-i18n="adminQuota.title">修改域名配额</h3>
                 <button class="modal-close" onclick="closeModalById('quotaModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="quotaUserId">
                 <div class="form-group">
-                    <label>用户</label>
+                    <label data-i18n="adminQuota.user">用户</label>
                     <input type="text" class="form-control" id="quotaUsername" readonly>
                 </div>
                 <div class="form-group">
-                    <label>域名配额</label>
-                    <input type="number" class="form-control" id="quotaValue" min="0" placeholder="留空使用默认配额">
-                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">0 表示不限制，留空使用系统默认配额</p>
+                    <label data-i18n="adminQuota.label">域名配额</label>
+                    <input type="number" class="form-control" id="quotaValue" min="0"
+                        data-i18n-placeholder="adminQuota.placeholder" placeholder="留空使用默认配额">
+                    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px" data-i18n="adminQuota.hint">0
+                        表示不限制，留空使用系统默认配额</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('quotaModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitQuota()">保存</button>
+                <button class="btn btn-secondary" onclick="closeModalById('quotaModal')" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitQuota()" data-i18n="save">保存</button>
             </div>
         </div>
     </div>
@@ -242,34 +254,37 @@
     <div class="modal-overlay" id="adminPasswordModal" onclick="closeModal(event,'adminPasswordModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>修改管理员密码</h3>
+                <h3 data-i18n="adminSelfPwd.title">修改管理员密码</h3>
                 <button class="modal-close" onclick="closeModalById('adminPasswordModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>原密码</label>
+                    <label data-i18n="adminSelfPwd.oldPassword">原密码</label>
                     <input type="password" class="form-control" id="adminOldPassword" autocomplete="new-password"
-                        placeholder="请输入原密码">
+                        data-i18n-placeholder="adminSelfPwd.oldPasswordPlaceholder" placeholder="请输入原密码">
                 </div>
                 <div class="form-group">
-                    <label>新密码</label>
+                    <label data-i18n="adminSelfPwd.newPassword">新密码</label>
                     <input type="password" class="form-control" id="adminNewPassword" autocomplete="new-password"
-                        placeholder="至少6个字符">
+                        data-i18n-placeholder="adminSelfPwd.newPasswordPlaceholder" placeholder="至少6个字符">
                 </div>
                 <div class="form-group">
-                    <label>确认新密码</label>
+                    <label data-i18n="adminSelfPwd.confirmPassword">确认新密码</label>
                     <input type="password" class="form-control" id="adminConfirmPassword" autocomplete="new-password"
-                        placeholder="再次输入新密码">
+                        data-i18n-placeholder="adminSelfPwd.confirmPlaceholder" placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('adminPasswordModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitAdminPassword()">确认修改</button>
+                <button class="btn btn-secondary" onclick="closeModalById('adminPasswordModal')"
+                    data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitAdminPassword()"
+                    data-i18n="adminSelfPwd.submit">确认修改</button>
             </div>
         </div>
     </div>
 
     <script src="/js/api.js"></script>
+    <script src="/js/i18n.js"></script>
     <script src="/js/theme.js"></script>
     <script>
         let siteConfig = {};
@@ -297,7 +312,7 @@
                 else { html += `<button class="page-btn ${p === page ? 'active' : ''}" onclick="${onPageChange}(${p})">${p}</button>`; }
             }
             html += `<button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${page + 1})">›</button>`;
-            html += `<span class="page-info">共 ${total} 条</span>`;
+            html += `<span class="page-info">${t('total')} ${total} ${t('items')}</span>`;
             html += '</div>';
             return html;
         }
@@ -314,7 +329,7 @@
                 document.getElementById('navUsername').textContent = api.user.username;
                 await Promise.all([loadStats(), loadRecords(), loadUsers()]);
             } catch (e) {
-                showToast('加载失败: ' + e.message, 'error');
+                showToast(t('panel.loadFailed') + ': ' + e.message, 'error');
             }
         }
 
@@ -332,10 +347,11 @@
 
         async function loadRecords(keyword = '') {
             const container = document.getElementById('recordsContainer');
+            const locale = I18N.lang() === 'zh' ? 'zh-CN' : 'en-US';
             try {
                 const data = await api.getAdminRecords(keyword, recordsPage, recordsPageSize);
                 if (data.records.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>暂无记录</p></div>';
+                    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>${t('admin.noRecords')}</p></div>`;
                     return;
                 }
                 container.innerHTML = `
@@ -343,15 +359,15 @@
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>域名</th>
-                  <th>记录类型</th>
-                  <th>记录值</th>
-                  <th>代理</th>
-                  <th>用户</th>
-                  <th>备注</th>
-                  <th>创建时间</th>
-                  <th>操作</th>
+                  <th>${t('table.id')}</th>
+                  <th>${t('table.domain')}</th>
+                  <th>${t('table.type')}</th>
+                  <th>${t('table.value')}</th>
+                  <th>${t('table.proxy')}</th>
+                  <th>${t('table.user')}</th>
+                  <th>${t('table.remark')}</th>
+                  <th>${t('table.createdAt')}</th>
+                  <th>${t('table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -361,17 +377,17 @@
                     <td><strong>${r.subdomain}.${siteConfig.domain}</strong></td>
                     <td><span class="badge badge-info">${r.record_type}</span></td>
                     <td style="font-family:monospace;font-size:0.85rem">${r.record_value}</td>
-                    <td>${r.proxied ? '<span class="badge badge-success">开启</span>' : '<span class="badge badge-warning">关闭</span>'}</td>
+                    <td>${r.proxied ? `<span class="badge badge-success">${t('badge.on')}</span>` : `<span class="badge badge-warning">${t('badge.disabled')}</span>`}</td>
                     <td style="color:var(--accent-secondary)">${r.username || '-'}</td>
                     <td style="color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.remark || '-'}</td>
-                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at + 'Z').toLocaleString('zh-CN')}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at + 'Z').toLocaleString(locale)}</td>
                     <td>
                       <div class="table-actions">
-                        <button class="btn btn-secondary btn-sm" onclick='openAdminEdit(${JSON.stringify(r)})'>编辑</button>
+                        <button class="btn btn-secondary btn-sm" onclick='openAdminEdit(${JSON.stringify(r)})'>${t('edit')}</button>
                         <button class="btn ${r.status === 'admin_suspended' ? 'btn-success' : 'btn-warning'} btn-sm" onclick="toggleDomainStatus(${r.id}, '${r.status}')">
-                          ${r.status === 'admin_suspended' ? '恢复' : '禁用'}
+                          ${r.status === 'admin_suspended' ? t('action.restore') : t('action.suspend')}
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="adminDeleteRecord(${r.id})">删除</button>
+                        <button class="btn btn-danger btn-sm" onclick="adminDeleteRecord(${r.id})">${t('action.delete')}</button>
                       </div>
                     </td>
                   </tr>
@@ -387,10 +403,11 @@
 
         async function loadUsers() {
             const container = document.getElementById('usersContainer');
+            const locale = I18N.lang() === 'zh' ? 'zh-CN' : 'en-US';
             try {
                 const data = await api.getAdminUsers(usersPage, usersPageSize);
                 if (data.users.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><p>暂无用户</p></div>';
+                    container.innerHTML = `<div class="empty-state"><p>${t('admin.noUsers')}</p></div>`;
                     return;
                 }
                 container.innerHTML = `
@@ -398,15 +415,15 @@
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>用户名</th>
-                  <th>邮箱</th>
-                  <th>角色</th>
-                  <th>状态</th>
-                  <th>域名数</th>
-                  <th>配额</th>
-                  <th>注册时间</th>
-                  <th>操作</th>
+                  <th>${t('table.id')}</th>
+                  <th>${t('table.username')}</th>
+                  <th>${t('table.email')}</th>
+                  <th>${t('table.role')}</th>
+                  <th>${t('table.status')}</th>
+                  <th>${t('table.domainCount')}</th>
+                  <th>${t('table.quotaCol') || t('action.quotaBtn')}</th>
+                  <th>${t('table.registeredAt')}</th>
+                  <th>${t('table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -415,25 +432,25 @@
                     <td style="color:var(--text-muted)">${u.id}</td>
                     <td><strong>${u.username}</strong></td>
                     <td style="color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.email}">${u.email}</td>
-                    <td>${u.role === 'admin' ? '<span class="badge badge-info">管理员</span>' : '<span class="badge badge-success">用户</span>'}</td>
-                    <td>${u.status === 'active' ? '<span class="badge badge-success">正常</span>' : '<span class="badge badge-danger">已禁用</span>'}</td>
+                    <td>${u.role === 'admin' ? `<span class="badge badge-info">${t('badge.admin')}</span>` : `<span class="badge badge-success">${t('badge.userRole')}</span>`}</td>
+                    <td>${u.status === 'active' ? `<span class="badge badge-success">${t('badge.active')}</span>` : `<span class="badge badge-danger">${t('badge.banned')}</span>`}</td>
                     <td>${u.domainCount}</td>
                     <td>
                       <span style="color:${u.domainQuota > 0 && u.domainCount >= u.domainQuota ? 'var(--color-error)' : 'var(--text-muted)'}">
-                        ${u.domainQuota === 0 ? '不限' : `${u.domainCount}/${u.domainQuota}`}
+                        ${u.domainQuota === 0 ? t('badge.unlimited') : `${u.domainCount}/${u.domainQuota}`}
                       </span>
                     </td>
-                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(u.created_at + 'Z').toLocaleString('zh-CN')}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(u.created_at + 'Z').toLocaleString(locale)}</td>
                     <td>
                       ${u.role !== 'admin' ? `
                         <div class="table-actions">
-                          <button class="btn btn-secondary btn-sm" onclick="openPasswordReset(${u.id}, '${u.username}')">重置密码</button>
-                          <button class="btn btn-secondary btn-sm" onclick="openQuotaModal(${u.id}, '${u.username}', ${u.domainQuota})">配额</button>
+                          <button class="btn btn-secondary btn-sm" onclick="openPasswordReset(${u.id}, '${u.username}')">${t('action.resetPassword')}</button>
+                          <button class="btn btn-secondary btn-sm" onclick="openQuotaModal(${u.id}, '${u.username}', ${u.domainQuota})">${t('action.quotaBtn')}</button>
                           <button class="btn ${u.status === 'active' ? 'btn-danger' : 'btn-success'} btn-sm"
                                   onclick="toggleUser(${u.id}, '${u.status === 'active' ? 'disabled' : 'active'}')">
-                            ${u.status === 'active' ? '禁用' : '启用'}
+                            ${u.status === 'active' ? t('action.suspend') : t('action.enable')}
                           </button>
-                          <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.username}')">删除</button>
+                          <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.username}')">${t('action.delete')}</button>
                         </div>
                       ` : '<span style="color:var(--text-muted);font-size:0.8rem">-</span>'}
                     </td>
@@ -490,11 +507,11 @@
             const recordValue = document.getElementById('adminEditValue').value.trim();
             const remark = document.getElementById('adminEditRemark').value.trim();
             const proxied = document.getElementById('adminEditProxied').checked;
-            if (!recordValue) { showToast('请填写记录值', 'error'); return; }
+            if (!recordValue) { showToast(t('adminEdit.enterValue'), 'error'); return; }
             try {
                 await api.updateAdminRecord(id, { recordValue, proxied, remark });
                 closeModalById('adminEditModal');
-                showToast('修改成功！', 'success');
+                showToast(t('admin.editSuccess'), 'success');
                 await loadRecords(document.getElementById('searchInput').value.trim());
             } catch (e) { showToast(e.message, 'error'); }
         }
@@ -502,39 +519,39 @@
         // Actions
         async function toggleDomainStatus(id, currentStatus) {
             const isSuspended = currentStatus === 'admin_suspended';
-            if (!confirm(isSuspended ? '确定恢复此域名解析？' : '确定禁用此域名解析？禁用后用户无法自行恢复。')) return;
+            if (!confirm(isSuspended ? t('confirm.restoreDomain') : t('confirm.suspendDomain'))) return;
             try {
                 await api.updateAdminRecordStatus(id, isSuspended ? 'active' : 'admin_suspended');
-                showToast(isSuspended ? '域名已恢复' : '域名已禁用', 'success');
+                showToast(isSuspended ? t('admin.domainRestored') : t('admin.domainSuspended'), 'success');
                 await loadRecords(document.getElementById('searchInput').value.trim());
             } catch (e) { showToast(e.message, 'error'); }
         }
 
         async function adminDeleteRecord(id) {
-            if (!confirm('确定删除此记录？')) return;
+            if (!confirm(t('confirm.deleteDomain'))) return;
             try {
                 await api.deleteAdminRecord(id);
-                showToast('删除成功', 'success');
+                showToast(t('admin.deleteSuccess'), 'success');
                 recordsPage = 1;
                 await Promise.all([loadRecords(), loadStats()]);
             } catch (e) { showToast(e.message, 'error'); }
         }
 
         async function toggleUser(id, status) {
-            const action = status === 'active' ? '启用' : '禁用';
-            if (!confirm(`确定${action}此用户？${status === 'disabled' ? '\n禁用后将删除其所有 DNS 解析记录。' : ''}`)) return;
+            const isEnable = status === 'active';
+            if (!confirm(isEnable ? t('confirm.enableUser') : t('confirm.disableUser'))) return;
             try {
                 await api.updateUserStatus(id, status);
-                showToast(`用户已${action}`, 'success');
+                showToast(isEnable ? t('admin.userEnabled') : t('admin.userDisabled'), 'success');
                 await loadUsers();
             } catch (e) { showToast(e.message, 'error'); }
         }
 
         async function deleteUser(id, username) {
-            if (!confirm(`确定删除用户 "${username}"？\n此操作不可恢复，将同时删除其所有 DNS 解析记录。`)) return;
+            if (!confirm(t('confirm.deleteUser', { name: username }))) return;
             try {
                 await api.deleteUser(id);
-                showToast('用户已删除', 'success');
+                showToast(t('admin.userDeleted'), 'success');
                 usersPage = 1;
                 await Promise.all([loadUsers(), loadStats()]);
             } catch (e) { showToast(e.message, 'error'); }
@@ -554,15 +571,15 @@
             const password = document.getElementById('pwdNewPassword').value;
             const confirm = document.getElementById('pwdConfirm').value;
             if (!password || password.length < 6) {
-                showToast('密码长度至少 6 个字符', 'error'); return;
+                showToast(t('adminPwd.tooShort'), 'error'); return;
             }
             if (password !== confirm) {
-                showToast('两次输入的密码不一致', 'error'); return;
+                showToast(t('adminPwd.mismatch'), 'error'); return;
             }
             try {
                 await api.resetUserPassword(id, password);
                 closeModalById('passwordModal');
-                showToast('密码重置成功！', 'success');
+                showToast(t('adminPwd.success'), 'success');
             } catch (e) { showToast(e.message, 'error'); }
         }
 
@@ -581,7 +598,7 @@
             try {
                 await api.updateUserQuota(id, quota);
                 closeModalById('quotaModal');
-                showToast('配额修改成功！', 'success');
+                showToast(t('adminQuota.success'), 'success');
                 await loadUsers();
             } catch (e) { showToast(e.message, 'error'); }
         }
@@ -594,7 +611,7 @@
                 document.getElementById('allowOauthRegister').checked = data.settings.allow_oauth_register === 'true';
                 document.getElementById('allowGithubRegister').checked = data.settings.allow_github_register !== 'false';
                 document.getElementById('defaultQuota').value = data.settings.default_domain_quota || '';
-            } catch (e) { showToast('加载设置失败: ' + e.message, 'error'); }
+            } catch (e) { showToast(t('settings.loadFailed') + ': ' + e.message, 'error'); }
         }
 
         async function saveSettings() {
@@ -604,7 +621,7 @@
             const defaultDomainQuota = document.getElementById('defaultQuota').value;
             try {
                 await api.updateAdminSettings({ allowRegister, allowOauthRegister, allowGithubRegister, defaultDomainQuota });
-                showToast('设置保存成功！', 'success');
+                showToast(t('settings.success'), 'success');
             } catch (e) { showToast(e.message, 'error'); }
         }
 
@@ -620,14 +637,21 @@
             const oldPassword = document.getElementById('adminOldPassword').value;
             const newPassword = document.getElementById('adminNewPassword').value;
             const confirmPassword = document.getElementById('adminConfirmPassword').value;
-            if (!oldPassword || !newPassword) { showToast('请填写完整信息', 'error'); return; }
-            if (newPassword.length < 6) { showToast('新密码长度至少 6 个字符', 'error'); return; }
-            if (newPassword !== confirmPassword) { showToast('两次输入的密码不一致', 'error'); return; }
+            if (!oldPassword || !newPassword) { showToast(t('adminSelfPwd.fillAll'), 'error'); return; }
+            if (newPassword.length < 6) { showToast(t('adminSelfPwd.tooShort'), 'error'); return; }
+            if (newPassword !== confirmPassword) { showToast(t('adminSelfPwd.mismatch'), 'error'); return; }
             try {
                 await api.updateAdminPassword(oldPassword, newPassword);
                 closeModalById('adminPasswordModal');
-                showToast('密码修改成功！', 'success');
+                showToast(t('adminSelfPwd.success'), 'success');
             } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // 语言切换后重新渲染动态内容
+        function onLangChange() {
+            document.title = t('admin.title');
+            loadRecords(document.getElementById('searchInput').value.trim());
+            loadUsers();
         }
 
         init();

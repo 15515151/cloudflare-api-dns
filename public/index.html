@@ -17,21 +17,23 @@
     <div class="container">
       <a href="/" class="navbar-brand">
         <span class="icon">🌐</span>
-        <span id="siteTitle">域名分发站</span>
+        <span id="siteTitle" data-i18n="nav.siteName">域名分发站</span>
       </a>
       <ul class="navbar-nav">
         <li id="navGuest">
-          <a href="/login.html" class="btn btn-secondary btn-sm">登录</a>
-          <a id="registerBtn" href="/login.html?tab=register" class="btn btn-primary btn-sm">注册</a>
+          <a href="/login.html" class="btn btn-secondary btn-sm" data-i18n="nav.login">登录</a>
+          <a id="registerBtn" href="/login.html?tab=register" class="btn btn-primary btn-sm"
+            data-i18n="nav.register">注册</a>
         </li>
         <li id="navUser" class="hidden" style="display:none;">
-          <a href="/panel.html">控制面板</a>
+          <a href="/panel.html" data-i18n="nav.panel">控制面板</a>
           <span id="navUsername" style="color:var(--text-secondary);font-size:0.85rem"></span>
-          <button onclick="api.logout()" class="btn btn-secondary btn-sm">退出</button>
+          <button onclick="api.logout()" class="btn btn-secondary btn-sm" data-i18n="nav.logout">退出</button>
         </li>
         <li id="navAdmin" class="hidden" style="display:none;">
-          <a href="/admin.html">管理后台</a>
+          <a href="/admin.html" data-i18n="nav.admin">管理后台</a>
         </li>
+        <li><button id="langToggleBtn" class="btn btn-secondary btn-sm" title="Language">EN</button></li>
         <li><button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="切换主题">☀️</button></li>
       </ul>
     </div>
@@ -40,7 +42,8 @@
   <!-- Warning Banner -->
   <div class="container" style="margin-top:12px">
     <div
-      style="background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;border-radius:8px;padding:12px 16px;font-size:0.9rem;line-height:1.8">
+      style="background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;border-radius:8px;padding:12px 16px;font-size:0.9rem;line-height:1.8"
+      data-i18n-html="index.warning">
       ⚠️ <strong>使用须知：</strong>本平台仅供合法用途，严禁用于以下行为：<br>
       🚫 传播色情、赌博、毒品等违法违规内容 &nbsp;|&nbsp; 🚫 散布谣言、诈骗、钓鱼等恶意信息 &nbsp;|&nbsp; 🚫 侵犯他人版权、隐私及合法权益<br>
       违规域名将被立即删除，情节严重者封禁账号并上报相关部门。<br>
@@ -52,19 +55,19 @@
   <!-- Hero Section -->
   <div class="container">
     <section class="hero">
-      <h1>免费二级域名</h1>
-      <p class="subtitle">输入你想要的子域名，立即获取属于你的专属二级域名</p>
+      <h1 data-i18n="index.hero">免费二级域名</h1>
+      <p class="subtitle" data-i18n="index.subtitle">输入你想要的子域名，立即获取属于你的专属二级域名</p>
 
       <div class="domain-checker">
         <div class="domain-input-group">
-          <input type="text" id="subdomainInput" placeholder="输入子域名" oninput="checkDomain()" autocomplete="off"
-            spellcheck="false">
+          <input type="text" id="subdomainInput" data-i18n-placeholder="index.inputPlaceholder" placeholder="输入子域名"
+            oninput="checkDomain()" autocomplete="off" spellcheck="false">
           <select id="domainSelect" class="domain-suffix" onchange="checkDomain()"
             style="cursor:pointer;padding:0 8px;border:none;background:transparent;font-size:inherit"></select>
         </div>
         <div class="domain-check-result" id="checkResult"></div>
         <div style="margin-top: 16px;">
-          <button class="btn btn-primary btn-lg" onclick="handleApply()" id="applyBtn">
+          <button class="btn btn-primary btn-lg" onclick="handleApply()" id="applyBtn" data-i18n="index.apply">
             🚀 立即申请
           </button>
         </div>
@@ -75,28 +78,28 @@
     <section class="features-grid">
       <div class="feature-card">
         <span class="feature-icon">⚡</span>
-        <h3>即时生效</h3>
-        <p>基于 Cloudflare DNS，域名解析秒级生效，全球 Anycast 网络加速</p>
+        <h3 data-i18n="index.feat1.title">即时生效</h3>
+        <p data-i18n="index.feat1.desc">基于 Cloudflare DNS，域名解析秒级生效，全球 Anycast 网络加速</p>
       </div>
       <div class="feature-card">
         <span class="feature-icon">🛡️</span>
-        <h3>安全可靠</h3>
-        <p>支持 Cloudflare 代理，提供 DDoS 防护和 SSL 证书</p>
+        <h3 data-i18n="index.feat2.title">安全可靠</h3>
+        <p data-i18n="index.feat2.desc">支持 Cloudflare 代理，提供 DDoS 防护和 SSL 证书</p>
       </div>
       <div class="feature-card">
         <span class="feature-icon">🔧</span>
-        <h3>自由管理</h3>
-        <p>支持 A、AAAA、CNAME、TXT、MX 多种记录类型，随时修改</p>
+        <h3 data-i18n="index.feat3.title">自由管理</h3>
+        <p data-i18n="index.feat3.desc">支持 A、AAAA、CNAME、TXT、MX 多种记录类型，随时修改</p>
       </div>
       <div class="feature-card">
         <span class="feature-icon">🎯</span>
-        <h3>简单易用</h3>
-        <p>注册账号即可开始使用，无需繁琐的审核流程</p>
+        <h3 data-i18n="index.feat4.title">简单易用</h3>
+        <p data-i18n="index.feat4.desc">注册账号即可开始使用，无需繁琐的审核流程</p>
       </div>
     </section>
 
     <footer class="footer">
-      <p>Powered by Cloudflare DNS API</p>
+      <p data-i18n="powered">Powered by Cloudflare DNS API</p>
     </footer>
   </div>
 
@@ -104,47 +107,50 @@
   <div class="modal-overlay" id="applyModal" onclick="closeModal(event, 'applyModal')">
     <div class="modal" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3>申请域名</h3>
+        <h3 data-i18n="apply.title">申请域名</h3>
         <button class="modal-close" onclick="closeModalById('applyModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>子域名</label>
+          <label data-i18n="apply.subdomain">子域名</label>
           <input type="text" class="form-control" id="applySubdomain" readonly>
         </div>
         <div class="form-group">
-          <label>记录类型</label>
+          <label data-i18n="apply.recordType">记录类型</label>
           <select class="form-control" id="applyType">
             <option value="A">A (IPv4)</option>
             <option value="AAAA">AAAA (IPv6)</option>
-            <option value="CNAME">CNAME (别名)</option>
-            <option value="TXT">TXT (文本)</option>
-            <option value="MX">MX (邮件)</option>
+            <option value="CNAME">CNAME</option>
+            <option value="TXT">TXT</option>
+            <option value="MX">MX</option>
           </select>
         </div>
         <div class="form-group">
-          <label>记录值</label>
-          <input type="text" class="form-control" id="applyValue" placeholder="如: 1.2.3.4">
+          <label data-i18n="apply.recordValue">记录值</label>
+          <input type="text" class="form-control" id="applyValue" data-i18n-placeholder="apply.recordValuePlaceholder"
+            placeholder="如: 1.2.3.4">
         </div>
         <div class="form-group">
-          <label>备注（可选）</label>
-          <input type="text" class="form-control" id="applyRemark" placeholder="用途说明">
+          <label data-i18n="apply.remark">备注（可选）</label>
+          <input type="text" class="form-control" id="applyRemark" data-i18n-placeholder="apply.remarkPlaceholder"
+            placeholder="用途说明">
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="applyProxied">
-            开启 Cloudflare 代理（小黄云）（仅 A/AAAA/CNAME）
+            <span data-i18n="apply.proxy">开启 Cloudflare 代理（小黄云）（仅 A/AAAA/CNAME）</span>
           </label>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModalById('applyModal')">取消</button>
-        <button class="btn btn-primary" onclick="submitApply()">确认申请</button>
+        <button class="btn btn-secondary" onclick="closeModalById('applyModal')" data-i18n="cancel">取消</button>
+        <button class="btn btn-primary" onclick="submitApply()" data-i18n="apply.confirm">确认申请</button>
       </div>
     </div>
   </div>
 
   <script src="/js/api.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/theme.js"></script>
   <script>
     let siteConfig = {};
@@ -155,7 +161,7 @@
       try {
         siteConfig = await api.getConfig();
         document.getElementById('siteTitle').textContent = siteConfig.siteName;
-        document.title = siteConfig.siteName + ' - 免费二级域名申请';
+        document.title = siteConfig.siteName + ' - ' + t('index.title').split(' - ')[1];
 
         // 初始化域名下拉框
         const domainSelect = document.getElementById('domainSelect');
@@ -219,18 +225,19 @@
         const selectedDomain = document.getElementById('domainSelect').value;
         if (!api.isLoggedIn()) {
           result.className = 'domain-check-result error';
-          result.textContent = '请先登录或注册账号';
+          result.textContent = t('index.loginFirst');
           return;
         }
 
         try {
           const data = await api.checkSubdomain(input, selectedDomain);
+          const fullDomain = `${input}.${selectedDomain}`;
           if (data.available) {
             result.className = 'domain-check-result available';
-            result.textContent = `✓ ${input}.${selectedDomain} 可以注册`;
+            result.textContent = t('index.available', { domain: fullDomain });
           } else {
             result.className = 'domain-check-result unavailable';
-            result.textContent = `✕ ${input}.${selectedDomain} 已被占用`;
+            result.textContent = t('index.unavailable', { domain: fullDomain });
           }
         } catch (e) {
           result.className = 'domain-check-result error';
@@ -248,7 +255,7 @@
 
       const subdomain = document.getElementById('subdomainInput').value.trim().toLowerCase();
       if (!subdomain) {
-        showToast('请输入子域名', 'error');
+        showToast(t('index.enterSubdomain'), 'error');
         return;
       }
 
@@ -266,14 +273,14 @@
       const proxied = document.getElementById('applyProxied').checked;
 
       if (!recordValue) {
-        showToast('请填写记录值', 'error');
+        showToast(t('apply.enterValue'), 'error');
         return;
       }
 
       try {
         await api.createRecord({ subdomain, domain, recordType, recordValue, proxied, remark });
         closeModalById('applyModal');
-        showToast('域名申请成功！', 'success');
+        showToast(t('index.applySuccess'), 'success');
         document.getElementById('subdomainInput').value = '';
         document.getElementById('checkResult').style.display = 'none';
         document.getElementById('applyValue').value = '';
@@ -281,6 +288,11 @@
       } catch (e) {
         showToast(e.message, 'error');
       }
+    }
+
+    // 语言切换后重新渲染动态内容
+    function onLangChange() {
+      document.title = (siteConfig.siteName || t('nav.siteName')) + ' - ' + t('index.title').split(' - ')[1];
     }
 
     init();

@@ -19,12 +19,14 @@
                 <span id="siteTitle">域名分发站</span>
             </a>
             <ul class="navbar-nav">
-                <a href="/" class="btn btn-secondary btn-sm">首页</a>
-                <a href="/panel.html" class="btn btn-secondary btn-sm active">控制面板</a>
-                <span id="navAdminLink" style="display:none"><a href="/admin.html"
-                        class="btn btn-secondary btn-sm">管理后台</a></span>
-                <button onclick="openPasswordModal()" class="btn btn-secondary btn-sm">修改密码</button>
-                <button onclick="api.logout()" class="btn btn-secondary btn-sm">退出</button>
+                <a href="/" class="btn btn-secondary btn-sm" data-i18n="nav.home">首页</a>
+                <a href="/panel.html" class="btn btn-secondary btn-sm active" data-i18n="nav.panel">控制面板</a>
+                <span id="navAdminLink" style="display:none"><a href="/admin.html" class="btn btn-secondary btn-sm"
+                        data-i18n="nav.admin">管理后台</a></span>
+                <button onclick="openPasswordModal()" class="btn btn-secondary btn-sm"
+                    data-i18n="nav.changePassword">修改密码</button>
+                <button onclick="api.logout()" class="btn btn-secondary btn-sm" data-i18n="nav.logout">退出</button>
+                <button id="langToggleBtn" class="btn btn-secondary btn-sm" title="Language">EN</button>
                 <button id="themeToggleBtn" class="btn btn-secondary btn-sm" title="切换主题">☀️</button>
                 <span id="navUsername" style="color:var(--text-secondary);font-size:0.85rem"></span>
             </ul>
@@ -33,30 +35,31 @@
 
     <div class="container">
         <div class="page-header">
-            <h1>控制面板</h1>
-            <p>管理你的二级域名记录</p>
+            <h1 data-i18n="panel.heading">控制面板</h1>
+            <p data-i18n="panel.desc">管理你的二级域名记录</p>
         </div>
 
         <!-- Stats -->
         <div class="stats-grid" id="userStats">
             <div class="stat-card">
                 <div class="stat-value" id="statCount">0</div>
-                <div class="stat-label">已使用域名</div>
+                <div class="stat-label" data-i18n="panel.usedDomains">已使用域名</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="statLimit">0</div>
-                <div class="stat-label">域名配额</div>
+                <div class="stat-label" data-i18n="panel.quota">域名配额</div>
             </div>
         </div>
 
         <!-- Records Card -->
         <div class="card">
             <div class="card-header">
-                <h2>📋 域名记录</h2>
+                <h2 data-i18n="panel.records">📋 域名记录</h2>
                 <div style="display:flex;gap:8px">
                     <button id="creditBtn" class="btn btn-secondary btn-sm" onclick="openCreditModal()"
-                        style="display:none">💎 积分兑换配额</button>
-                    <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ 添加域名</button>
+                        style="display:none" data-i18n="panel.credit">💎 积分兑换配额</button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal()" data-i18n="panel.addDomain">+
+                        添加域名</button>
                 </div>
             </div>
             <div class="card-body" id="recordsContainer">
@@ -71,44 +74,47 @@
     <div class="modal-overlay" id="addModal" onclick="closeModal(event,'addModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>添加域名</h3>
+                <h3 data-i18n="add.title">添加域名</h3>
                 <button class="modal-close" onclick="closeModalById('addModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>子域名</label>
-                    <input type="text" class="form-control" id="addSubdomain" placeholder="输入子域名">
+                    <label data-i18n="add.subdomain">子域名</label>
+                    <input type="text" class="form-control" id="addSubdomain"
+                        data-i18n-placeholder="add.subdomainPlaceholder" placeholder="输入子域名">
                     <select class="form-control" id="addDomainSelect" style="margin-top:8px"></select>
                     <div class="domain-check-result" id="addCheckResult" style="margin-top:8px"></div>
                 </div>
                 <div class="form-group">
-                    <label>记录类型</label>
+                    <label data-i18n="add.recordType">记录类型</label>
                     <select class="form-control" id="addType">
                         <option value="A">A (IPv4)</option>
                         <option value="AAAA">AAAA (IPv6)</option>
-                        <option value="CNAME">CNAME (别名)</option>
-                        <option value="TXT">TXT (文本)</option>
-                        <option value="MX">MX (邮件)</option>
+                        <option value="CNAME">CNAME</option>
+                        <option value="TXT">TXT</option>
+                        <option value="MX">MX</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>记录值</label>
-                    <input type="text" class="form-control" id="addValue" placeholder="如: 1.2.3.4">
+                    <label data-i18n="add.recordValue">记录值</label>
+                    <input type="text" class="form-control" id="addValue"
+                        data-i18n-placeholder="add.recordValuePlaceholder" placeholder="如: 1.2.3.4">
                 </div>
                 <div class="form-group">
-                    <label>备注（可选）</label>
-                    <input type="text" class="form-control" id="addRemark" placeholder="用途说明">
+                    <label data-i18n="add.remark">备注（可选）</label>
+                    <input type="text" class="form-control" id="addRemark" data-i18n-placeholder="add.remarkPlaceholder"
+                        placeholder="用途说明">
                 </div>
                 <div class="form-group">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                         <input type="checkbox" id="addProxied">
-                        开启 Cloudflare 代理（小黄云）
+                        <span data-i18n="add.proxy">开启 Cloudflare 代理（小黄云）</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('addModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitAdd()">确认添加</button>
+                <button class="btn btn-secondary" onclick="closeModalById('addModal')" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitAdd()" data-i18n="add.confirm">确认添加</button>
             </div>
         </div>
     </div>
@@ -117,37 +123,38 @@
     <div class="modal-overlay" id="editModal" onclick="closeModal(event,'editModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>修改记录</h3>
+                <h3 data-i18n="edit.title">修改记录</h3>
                 <button class="modal-close" onclick="closeModalById('editModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editId">
                 <div class="form-group">
-                    <label>域名</label>
+                    <label data-i18n="edit.domain">域名</label>
                     <input type="text" class="form-control" id="editDomain" readonly>
                 </div>
                 <div class="form-group">
-                    <label>记录类型</label>
+                    <label data-i18n="edit.recordType">记录类型</label>
                     <input type="text" class="form-control" id="editType" readonly>
                 </div>
                 <div class="form-group">
-                    <label>记录值</label>
-                    <input type="text" class="form-control" id="editValue" placeholder="新的记录值">
+                    <label data-i18n="edit.recordValue">记录值</label>
+                    <input type="text" class="form-control" id="editValue"
+                        data-i18n-placeholder="edit.recordValuePlaceholder" placeholder="新的记录值">
                 </div>
                 <div class="form-group">
-                    <label>备注</label>
+                    <label data-i18n="edit.remark">备注</label>
                     <input type="text" class="form-control" id="editRemark">
                 </div>
                 <div class="form-group">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                         <input type="checkbox" id="editProxied">
-                        开启 Cloudflare 代理（小黄云）
+                        <span data-i18n="add.proxy">开启 Cloudflare 代理（小黄云）</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('editModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitEdit()">保存修改</button>
+                <button class="btn btn-secondary" onclick="closeModalById('editModal')" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitEdit()" data-i18n="edit.save">保存修改</button>
             </div>
         </div>
     </div>
@@ -156,12 +163,13 @@
     <div class="modal-overlay" id="notificationModal" onclick="closeModal(event,'notificationModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>📢 系统通知</h3>
+                <h3 data-i18n="notification.title">📢 系统通知</h3>
                 <button class="modal-close" onclick="dismissNotifications()">&times;</button>
             </div>
             <div class="modal-body" id="notificationList"></div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="dismissNotifications()">我已知晓</button>
+                <button class="btn btn-primary" onclick="dismissNotifications()"
+                    data-i18n="notification.dismiss">我已知晓</button>
             </div>
         </div>
     </div>
@@ -170,26 +178,30 @@
     <div class="modal-overlay" id="passwordModal" onclick="closeModal(event,'passwordModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>修改密码</h3>
+                <h3 data-i18n="pwd.title">修改密码</h3>
                 <button class="modal-close" onclick="closeModalById('passwordModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>原密码</label>
-                    <input type="password" class="form-control" id="oldPassword" placeholder="请输入原密码">
+                    <label data-i18n="pwd.oldPassword">原密码</label>
+                    <input type="password" class="form-control" id="oldPassword"
+                        data-i18n-placeholder="pwd.oldPasswordPlaceholder" placeholder="请输入原密码">
                 </div>
                 <div class="form-group">
-                    <label>新密码</label>
-                    <input type="password" class="form-control" id="newPassword" placeholder="至少6个字符">
+                    <label data-i18n="pwd.newPassword">新密码</label>
+                    <input type="password" class="form-control" id="newPassword"
+                        data-i18n-placeholder="pwd.newPasswordPlaceholder" placeholder="至少6个字符">
                 </div>
                 <div class="form-group">
-                    <label>确认新密码</label>
-                    <input type="password" class="form-control" id="confirmPassword" placeholder="再次输入新密码">
+                    <label data-i18n="pwd.confirmPassword">确认新密码</label>
+                    <input type="password" class="form-control" id="confirmPassword"
+                        data-i18n-placeholder="pwd.confirmPasswordPlaceholder" placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('passwordModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitPassword()">确认修改</button>
+                <button class="btn btn-secondary" onclick="closeModalById('passwordModal')"
+                    data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitPassword()" data-i18n="pwd.submit">确认修改</button>
             </div>
         </div>
     </div>
@@ -198,27 +210,29 @@
     <div class="modal-overlay" id="creditModal" onclick="closeModal(event,'creditModal')">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>💎 积分兑换域名配额</h3>
+                <h3 data-i18n="credit.title">💎 积分兑换域名配额</h3>
                 <button class="modal-close" onclick="closeModalById('creditModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <p id="creditDesc" style="color:var(--text-muted);margin-bottom:16px"></p>
                 <div class="form-group">
-                    <label>购买数量（1-30）</label>
+                    <label data-i18n="credit.quantity">购买数量（1-30）</label>
                     <input type="number" class="form-control" id="creditQuantity" value="1" min="1" max="30"
                         oninput="updateCreditDesc()">
                 </div>
                 <p id="creditTotal" style="font-size:0.9rem;margin-top:8px"></p>
-                <p style="font-size:0.9rem;color:var(--text-muted)">点击确认后将跳转到 Linux.Do Credit 完成积分支付，支付成功后配额自动增加。</p>
+                <p style="font-size:0.9rem;color:var(--text-muted)" data-i18n="credit.note">点击确认后将跳转到 Linux.Do Credit
+                    完成积分支付，支付成功后配额自动增加。</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModalById('creditModal')">取消</button>
-                <button class="btn btn-primary" onclick="submitCredit()">前往支付</button>
+                <button class="btn btn-secondary" onclick="closeModalById('creditModal')" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitCredit()" data-i18n="credit.submit">前往支付</button>
             </div>
         </div>
     </div>
 
     <script src="/js/api.js"></script>
+    <script src="/js/i18n.js"></script>
     <script src="/js/theme.js"></script>
     <script>
         let siteConfig = {};
@@ -244,7 +258,7 @@
                 else { html += `<button class="page-btn ${p === page ? 'active' : ''}" onclick="${onPageChange}(${p})">${p}</button>`; }
             }
             html += `<button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${page + 1})">›</button>`;
-            html += `<span class="page-info">共 ${total} 条</span>`;
+            html += `<span class="page-info">${t('total')} ${total} ${t('items')}</span>`;
             html += '</div>';
             return html;
         }
@@ -283,12 +297,12 @@
                     if (creditCfg.enabled) {
                         creditConfig = creditCfg;
                         const btn = document.getElementById('creditBtn');
-                        if (btn) { btn.style.display = ''; btn.textContent = `💎 积分兑换配额 (${creditCfg.creditsPerQuota} 积分/个)`; }
+                        if (btn) { btn.style.display = ''; btn.textContent = `💎 ${t('panel.credit')} (${creditCfg.creditsPerQuota} ${t('items')})`; }
                     }
                 } catch (e) { }
 
             } catch (e) {
-                showToast('加载失败: ' + e.message, 'error');
+                showToast(t('panel.loadFailed') + ': ' + e.message, 'error');
             }
         }
 
@@ -300,31 +314,32 @@
                 const data = await api.getRecords(currentPage, pageSize);
                 document.getElementById('statCount').textContent = data.total;
                 if (data.quota !== undefined) {
-                    document.getElementById('statLimit').textContent = data.quota === 0 ? '不限' : data.quota;
+                    document.getElementById('statLimit').textContent = data.quota === 0 ? t('badge.unlimited') : data.quota;
                 }
 
                 if (data.total === 0) {
                     container.innerHTML = `
             <div class="empty-state">
               <span class="empty-icon">📭</span>
-              <p>还没有域名记录</p>
-              <button class="btn btn-primary" onclick="openAddModal()">+ 添加域名</button>
+              <p>${t('panel.emptyRecords')}</p>
+              <button class="btn btn-primary" onclick="openAddModal()">${t('panel.addDomain')}</button>
             </div>`;
                     return;
                 }
 
+                const locale = I18N.lang() === 'zh' ? 'zh-CN' : 'en-US';
                 container.innerHTML = `
           <div class="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  <th>域名</th>
-                  <th>类型</th>
-                  <th>记录值</th>
-                  <th>代理</th>
-                  <th>备注</th>
-                  <th>创建时间</th>
-                  <th>操作</th>
+                  <th>${t('table.domain')}</th>
+                  <th>${t('table.type')}</th>
+                  <th>${t('table.value')}</th>
+                  <th>${t('table.proxy')}</th>
+                  <th>${t('table.remark')}</th>
+                  <th>${t('table.createdAt')}</th>
+                  <th>${t('table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,15 +348,15 @@
                     <td><strong>${r.subdomain}.${r.domain || siteConfig.domain}</strong></td>
                     <td><span class="badge badge-info">${r.record_type}</span></td>
                     <td style="font-family:monospace;font-size:0.85rem">${r.record_value}</td>
-                    <td>${r.proxied ? '<span class="badge badge-success">已开启</span>' : '<span class="badge badge-warning">关闭</span>'}</td>
+                    <td>${r.proxied ? `<span class="badge badge-success">${t('badge.enabled')}</span>` : `<span class="badge badge-warning">${t('badge.disabled')}</span>`}</td>
                     <td style="color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis">${r.remark || '-'}</td>
-                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at + 'Z').toLocaleString('zh-CN')}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at + 'Z').toLocaleString(locale)}</td>
                     <td>
                       <div class="table-actions">
                         ${r.status === 'admin_suspended'
-                        ? '<span style="color:var(--color-error);font-size:0.8rem">⛔ 已被管理员禁用</span>'
-                        : `<button class="btn btn-secondary btn-sm" onclick='openEdit(${JSON.stringify(r)})'>修改</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">删除</button>`}
+                        ? `<span style="color:var(--color-error);font-size:0.8rem">${t('badge.adminSuspended')}</span>`
+                        : `<button class="btn btn-secondary btn-sm" onclick='openEdit(${JSON.stringify(r)})'>${t('action.modify')}</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">${t('action.delete')}</button>`}
                       </div>
                     </td>
                   </tr>
@@ -351,7 +366,7 @@
           </div>
           ${renderPagination(data.page, data.pageSize, data.total, 'goPage')}`;
             } catch (e) {
-                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+                container.innerHTML = `<div class="empty-state"><p>${t('panel.loadFailed')}: ${e.message}</p></div>`;
             }
         }
 
@@ -382,22 +397,22 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (!oldPassword || !newPassword || !confirmPassword) {
-                showToast('请填写完整信息', 'error');
+                showToast(t('pwd.fillAll'), 'error');
                 return;
             }
             if (newPassword.length < 6) {
-                showToast('新密码长度至少 6 个字符', 'error');
+                showToast(t('pwd.tooShort'), 'error');
                 return;
             }
             if (newPassword !== confirmPassword) {
-                showToast('两次输入的密码不一致', 'error');
+                showToast(t('pwd.mismatch'), 'error');
                 return;
             }
 
             try {
                 await api.updatePassword(oldPassword, newPassword);
                 closeModalById('passwordModal');
-                showToast('密码修改成功！', 'success');
+                showToast(t('pwd.success'), 'success');
             } catch (e) {
                 showToast(e.message, 'error');
             }
@@ -415,7 +430,7 @@
                     const data = await api.checkSubdomain(v, document.getElementById('addDomainSelect').value);
                     const d = document.getElementById('addDomainSelect').value;
                     result.className = 'domain-check-result ' + (data.available ? 'available' : 'unavailable');
-                    result.textContent = data.available ? `✓ ${v}.${d} 可用` : `✕ ${v}.${d} 已被占用`;
+                    result.textContent = data.available ? t('add.available', { domain: `${v}.${d}` }) : t('add.unavailable', { domain: `${v}.${d}` });
                 } catch (e) {
                     result.className = 'domain-check-result error';
                     result.textContent = e.message;
@@ -431,12 +446,12 @@
             const remark = document.getElementById('addRemark').value.trim();
             const proxied = document.getElementById('addProxied').checked;
 
-            if (!subdomain || !recordValue) { showToast('请填写完整信息', 'error'); return; }
+            if (!subdomain || !recordValue) { showToast(t('add.fillAll'), 'error'); return; }
 
             try {
                 await api.createRecord({ subdomain, domain, recordType, recordValue, proxied, remark });
                 closeModalById('addModal');
-                showToast('添加成功！', 'success');
+                showToast(t('add.success'), 'success');
                 currentPage = 1;
                 await loadRecords();
             } catch (e) {
@@ -460,12 +475,12 @@
             const remark = document.getElementById('editRemark').value.trim();
             const proxied = document.getElementById('editProxied').checked;
 
-            if (!recordValue) { showToast('请填写记录值', 'error'); return; }
+            if (!recordValue) { showToast(t('edit.enterValue'), 'error'); return; }
 
             try {
                 await api.updateRecord(id, { recordValue, proxied, remark });
                 closeModalById('editModal');
-                showToast('修改成功！', 'success');
+                showToast(t('edit.success'), 'success');
                 await loadRecords();
             } catch (e) {
                 showToast(e.message, 'error');
@@ -473,10 +488,10 @@
         }
 
         async function deleteRecord(id) {
-            if (!confirm('确定删除此域名记录？此操作不可恢复')) return;
+            if (!confirm(t('confirm.deleteRecord'))) return;
             try {
                 await api.deleteRecord(id);
-                showToast('删除成功', 'success');
+                showToast(t('admin.deleteSuccess'), 'success');
                 currentPage = 1;
                 await loadRecords();
             } catch (e) {
@@ -503,10 +518,10 @@
         function updateCreditDesc() {
             const qty = Math.min(Math.max(parseInt(document.getElementById('creditQuantity').value) || 1, 1), 30);
             const perQuota = creditConfig.creditsPerQuota || 50;
-            document.getElementById('creditTotal').textContent = `共消耗 ${perQuota * qty} 积分，兑换 ${qty} 个域名配额。`;
+            document.getElementById('creditTotal').textContent = t('credit.total', { total: perQuota * qty, qty: qty });
         }
         function openCreditModal() {
-            document.getElementById('creditDesc').textContent = `每个域名配额消耗 ${creditConfig.creditsPerQuota || 50} 积分。`;
+            document.getElementById('creditDesc').textContent = t('credit.desc', { n: creditConfig.creditsPerQuota || 50 });
             document.getElementById('creditQuantity').value = 1;
             updateCreditDesc();
             openModal('creditModal');
@@ -516,7 +531,6 @@
             const quantity = Math.min(Math.max(parseInt(document.getElementById('creditQuantity').value) || 1, 1), 30);
             try {
                 const data = await api.createCreditOrder(quantity);
-                // 构造表单提交跳转
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = data.payUrl;
@@ -528,6 +542,12 @@
                 document.body.appendChild(form);
                 form.submit();
             } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // 语言切换后重新加载动态内容
+        function onLangChange() {
+            document.title = t('panel.title');
+            loadRecords();
         }
 
         init();
