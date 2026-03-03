@@ -99,8 +99,8 @@ class ApiClient {
         return this.request('GET', `/dns/check/${encodeURIComponent(subdomain)}${query}`);
     }
 
-    async getRecords() {
-        return this.request('GET', '/dns/records');
+    async getRecords(page = 1, pageSize = 10) {
+        return this.request('GET', `/dns/records?page=${page}&pageSize=${pageSize}`);
     }
 
     async createRecord(data) {
@@ -116,13 +116,14 @@ class ApiClient {
     }
 
     // Admin
-    async getAdminRecords(keyword = '') {
-        const params = keyword ? `?keyword=${encodeURIComponent(keyword)}` : '';
-        return this.request('GET', `/admin/records${params}`);
+    async getAdminRecords(keyword = '', page = 1, pageSize = 20) {
+        const params = new URLSearchParams({ page, pageSize });
+        if (keyword) params.set('keyword', keyword);
+        return this.request('GET', `/admin/records?${params.toString()}`);
     }
 
-    async getAdminUsers() {
-        return this.request('GET', '/admin/members');
+    async getAdminUsers(page = 1, pageSize = 20) {
+        return this.request('GET', `/admin/members?page=${page}&pageSize=${pageSize}`);
     }
 
     async updateAdminRecord(id, data) {

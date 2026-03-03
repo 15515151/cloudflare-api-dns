@@ -36,7 +36,11 @@ router.get('/records', (req, res) => {
 // 获取所有用户
 router.get('/members', (req, res) => {
     try {
-        const users = db.getAllUsers();
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20));
+        const offset = (page - 1) * pageSize;
+        const total = db.countAllUsers();
+        const users = db.getAllUsersPaginated(pageSize, offset);
         const defaultQuota = parseInt(db.getSystemConfig('default_domain_quota') || '10');
         // 统计每个用户的域名数量和配额
         const usersWithCount = users.map(u => ({
@@ -44,7 +48,7 @@ router.get('/members', (req, res) => {
             domainCount: db.countUserDomains(u.id),
             domainQuota: u.domain_quota !== null ? u.domain_quota : defaultQuota
         }));
-        res.json({ users: usersWithCount });
+        res.json({ users: usersWithCount, total, page, pageSize });
     } catch (err) {
         console.error('获取用户失败:', err);
         res.status(500).json({ error: '获取用户失败' });

@@ -39,10 +39,13 @@
 
   <!-- Warning Banner -->
   <div class="container" style="margin-top:12px">
-    <div style="background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;border-radius:8px;padding:12px 16px;font-size:0.9rem;line-height:1.8">
+    <div
+      style="background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;border-radius:8px;padding:12px 16px;font-size:0.9rem;line-height:1.8">
       ⚠️ <strong>使用须知：</strong>本平台仅供合法用途，严禁用于以下行为：<br>
       🚫 传播色情、赌博、毒品等违法违规内容 &nbsp;|&nbsp; 🚫 散布谣言、诈骗、钓鱼等恶意信息 &nbsp;|&nbsp; 🚫 侵犯他人版权、隐私及合法权益<br>
-      违规域名将被立即删除，情节严重者封禁账号并上报相关部门。
+      违规域名将被立即删除，情节严重者封禁账号并上报相关部门。<br>
+      📧 如发现滥用行为，请发送邮件至 <a href="mailto:qfyyz3369@gmail.com"
+        style="color:var(--warning);font-weight:600">qfyyz3369@gmail.com</a> 进行举报。
     </div>
   </div>
 
@@ -56,7 +59,8 @@
         <div class="domain-input-group">
           <input type="text" id="subdomainInput" placeholder="输入子域名" oninput="checkDomain()" autocomplete="off"
             spellcheck="false">
-          <select id="domainSelect" class="domain-suffix" onchange="checkDomain()" style="cursor:pointer;padding:0 8px;border:none;background:transparent;font-size:inherit"></select>
+          <select id="domainSelect" class="domain-suffix" onchange="checkDomain()"
+            style="cursor:pointer;padding:0 8px;border:none;background:transparent;font-size:inherit"></select>
         </div>
         <div class="domain-check-result" id="checkResult"></div>
         <div style="margin-top: 16px;">

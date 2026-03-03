@@ -112,14 +112,16 @@
                             <input type="checkbox" id="allowOauthRegister">
                             允许 Linux.Do OAuth 注册
                         </label>
-                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，新用户将无法通过 Linux.Do 登录注册，已有账号不受影响</p>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，新用户将无法通过 Linux.Do
+                            登录注册，已有账号不受影响</p>
                     </div>
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                             <input type="checkbox" id="allowGithubRegister">
                             允许 GitHub OAuth 注册
                         </label>
-                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，新用户将无法通过 GitHub 登录注册，已有账号不受影响</p>
+                        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">关闭后，新用户将无法通过 GitHub
+                            登录注册，已有账号不受影响</p>
                     </div>
                     <div class="form-group">
                         <label>新用户默认域名配额</label>
@@ -194,11 +196,13 @@
                 </div>
                 <div class="form-group">
                     <label>新密码</label>
-                    <input type="password" class="form-control" id="pwdNewPassword" autocomplete="new-password" placeholder="至少 6 个字符">
+                    <input type="password" class="form-control" id="pwdNewPassword" autocomplete="new-password"
+                        placeholder="至少 6 个字符">
                 </div>
                 <div class="form-group">
                     <label>确认密码</label>
-                    <input type="password" class="form-control" id="pwdConfirm" autocomplete="new-password" placeholder="再次输入新密码">
+                    <input type="password" class="form-control" id="pwdConfirm" autocomplete="new-password"
+                        placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
@@ -244,15 +248,18 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label>原密码</label>
-                    <input type="password" class="form-control" id="adminOldPassword" autocomplete="new-password" placeholder="请输入原密码">
+                    <input type="password" class="form-control" id="adminOldPassword" autocomplete="new-password"
+                        placeholder="请输入原密码">
                 </div>
                 <div class="form-group">
                     <label>新密码</label>
-                    <input type="password" class="form-control" id="adminNewPassword" autocomplete="new-password" placeholder="至少6个字符">
+                    <input type="password" class="form-control" id="adminNewPassword" autocomplete="new-password"
+                        placeholder="至少6个字符">
                 </div>
                 <div class="form-group">
                     <label>确认新密码</label>
-                    <input type="password" class="form-control" id="adminConfirmPassword" autocomplete="new-password" placeholder="再次输入新密码">
+                    <input type="password" class="form-control" id="adminConfirmPassword" autocomplete="new-password"
+                        placeholder="再次输入新密码">
                 </div>
             </div>
             <div class="modal-footer">
@@ -266,6 +273,34 @@
     <script src="/js/theme.js"></script>
     <script>
         let siteConfig = {};
+        let recordsPage = 1;
+        const recordsPageSize = 20;
+        let usersPage = 1;
+        const usersPageSize = 20;
+
+        // 生成分页 HTML
+        function renderPagination(page, pageSize, total, onPageChange) {
+            const totalPages = Math.ceil(total / pageSize);
+            if (totalPages <= 1) return '';
+            let html = '<div class="pagination">';
+            html += `<button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="${onPageChange}(${page - 1})">‹</button>`;
+            const range = [];
+            range.push(1);
+            let start = Math.max(2, page - 2);
+            let end = Math.min(totalPages - 1, page + 2);
+            if (start > 2) range.push('...');
+            for (let i = start; i <= end; i++) range.push(i);
+            if (end < totalPages - 1) range.push('...');
+            if (totalPages > 1) range.push(totalPages);
+            for (const p of range) {
+                if (p === '...') { html += '<span class="page-ellipsis">…</span>'; }
+                else { html += `<button class="page-btn ${p === page ? 'active' : ''}" onclick="${onPageChange}(${p})">${p}</button>`; }
+            }
+            html += `<button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${page + 1})">›</button>`;
+            html += `<span class="page-info">共 ${total} 条</span>`;
+            html += '</div>';
+            return html;
+        }
 
         async function init() {
             if (!api.isLoggedIn() || !api.isAdmin()) {
@@ -292,10 +327,13 @@
             } catch (e) { console.error(e); }
         }
 
+        function goRecordsPage(p) { recordsPage = p; loadRecords(document.getElementById('searchInput').value.trim()); }
+        function goUsersPage(p) { usersPage = p; loadUsers(); }
+
         async function loadRecords(keyword = '') {
             const container = document.getElementById('recordsContainer');
             try {
-                const data = await api.getAdminRecords(keyword);
+                const data = await api.getAdminRecords(keyword, recordsPage, recordsPageSize);
                 if (data.records.length === 0) {
                     container.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>暂无记录</p></div>';
                     return;
@@ -326,7 +364,7 @@
                     <td>${r.proxied ? '<span class="badge badge-success">开启</span>' : '<span class="badge badge-warning">关闭</span>'}</td>
                     <td style="color:var(--accent-secondary)">${r.username || '-'}</td>
                     <td style="color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.remark || '-'}</td>
-                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at).toLocaleString('zh-CN')}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at + 'Z').toLocaleString('zh-CN')}</td>
                     <td>
                       <div class="table-actions">
                         <button class="btn btn-secondary btn-sm" onclick='openAdminEdit(${JSON.stringify(r)})'>编辑</button>
@@ -340,7 +378,8 @@
                 `).join('')}
               </tbody>
             </table>
-          </div>`;
+          </div>
+          ${renderPagination(data.page, data.pageSize, data.total, 'goRecordsPage')}`;
             } catch (e) {
                 container.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
             }
@@ -349,7 +388,7 @@
         async function loadUsers() {
             const container = document.getElementById('usersContainer');
             try {
-                const data = await api.getAdminUsers();
+                const data = await api.getAdminUsers(usersPage, usersPageSize);
                 if (data.users.length === 0) {
                     container.innerHTML = '<div class="empty-state"><p>暂无用户</p></div>';
                     return;
@@ -384,7 +423,7 @@
                         ${u.domainQuota === 0 ? '不限' : `${u.domainCount}/${u.domainQuota}`}
                       </span>
                     </td>
-                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(u.created_at).toLocaleString('zh-CN')}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(u.created_at + 'Z').toLocaleString('zh-CN')}</td>
                     <td>
                       ${u.role !== 'admin' ? `
                         <div class="table-actions">
@@ -402,7 +441,8 @@
                 `).join('')}
               </tbody>
             </table>
-          </div>`;
+          </div>
+          ${renderPagination(data.page, data.pageSize, data.total, 'goUsersPage')}`;
             } catch (e) {
                 container.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
             }
@@ -423,6 +463,7 @@
         function debounceSearch() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
+                recordsPage = 1;
                 loadRecords(document.getElementById('searchInput').value.trim());
             }, 400);
         }
@@ -474,6 +515,7 @@
             try {
                 await api.deleteAdminRecord(id);
                 showToast('删除成功', 'success');
+                recordsPage = 1;
                 await Promise.all([loadRecords(), loadStats()]);
             } catch (e) { showToast(e.message, 'error'); }
         }
@@ -493,6 +535,7 @@
             try {
                 await api.deleteUser(id);
                 showToast('用户已删除', 'success');
+                usersPage = 1;
                 await Promise.all([loadUsers(), loadStats()]);
             } catch (e) { showToast(e.message, 'error'); }
         }

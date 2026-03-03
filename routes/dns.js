@@ -65,11 +65,15 @@ router.get('/check/:subdomain', async (req, res) => {
 // 获取当前用户的域名记录
 router.get('/records', (req, res) => {
     try {
-        const records = db.getDomainsByUser(req.user.id);
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 10));
+        const offset = (page - 1) * pageSize;
+        const total = db.countDomainsByUser(req.user.id);
+        const records = db.getDomainsByUserPaginated(req.user.id, pageSize, offset);
         const userQuota = db.getUserDomainQuota(req.user.id);
         const defaultQuota = parseInt(db.getSystemConfig('default_domain_quota') || '10');
         const quota = userQuota !== null ? userQuota : defaultQuota;
-        res.json({ records, quota });
+        res.json({ records, quota, total, page, pageSize });
     } catch (err) {
         console.error('获取域名记录失败:', err);
         res.status(500).json({ error: '获取记录失败' });

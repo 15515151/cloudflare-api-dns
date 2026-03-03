@@ -54,7 +54,8 @@
             <div class="card-header">
                 <h2>📋 域名记录</h2>
                 <div style="display:flex;gap:8px">
-                    <button id="creditBtn" class="btn btn-secondary btn-sm" onclick="openCreditModal()" style="display:none">💎 积分兑换配额</button>
+                    <button id="creditBtn" class="btn btn-secondary btn-sm" onclick="openCreditModal()"
+                        style="display:none">💎 积分兑换配额</button>
                     <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ 添加域名</button>
                 </div>
             </div>
@@ -204,7 +205,8 @@
                 <p id="creditDesc" style="color:var(--text-muted);margin-bottom:16px"></p>
                 <div class="form-group">
                     <label>购买数量（1-30）</label>
-                    <input type="number" class="form-control" id="creditQuantity" value="1" min="1" max="30" oninput="updateCreditDesc()">
+                    <input type="number" class="form-control" id="creditQuantity" value="1" min="1" max="30"
+                        oninput="updateCreditDesc()">
                 </div>
                 <p id="creditTotal" style="font-size:0.9rem;margin-top:8px"></p>
                 <p style="font-size:0.9rem;color:var(--text-muted)">点击确认后将跳转到 Linux.Do Credit 完成积分支付，支付成功后配额自动增加。</p>
@@ -220,6 +222,32 @@
     <script src="/js/theme.js"></script>
     <script>
         let siteConfig = {};
+        let currentPage = 1;
+        const pageSize = 10;
+
+        // 生成分页 HTML
+        function renderPagination(page, pageSize, total, onPageChange) {
+            const totalPages = Math.ceil(total / pageSize);
+            if (totalPages <= 1) return '';
+            let html = '<div class="pagination">';
+            html += `<button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="${onPageChange}(${page - 1})">‹</button>`;
+            const range = [];
+            range.push(1);
+            let start = Math.max(2, page - 2);
+            let end = Math.min(totalPages - 1, page + 2);
+            if (start > 2) range.push('...');
+            for (let i = start; i <= end; i++) range.push(i);
+            if (end < totalPages - 1) range.push('...');
+            if (totalPages > 1) range.push(totalPages);
+            for (const p of range) {
+                if (p === '...') { html += '<span class="page-ellipsis">…</span>'; }
+                else { html += `<button class="page-btn ${p === page ? 'active' : ''}" onclick="${onPageChange}(${p})">${p}</button>`; }
+            }
+            html += `<button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${page + 1})">›</button>`;
+            html += `<span class="page-info">共 ${total} 条</span>`;
+            html += '</div>';
+            return html;
+        }
 
         async function init() {
             if (!api.isLoggedIn()) {
@@ -257,23 +285,25 @@
                         const btn = document.getElementById('creditBtn');
                         if (btn) { btn.style.display = ''; btn.textContent = `💎 积分兑换配额 (${creditCfg.creditsPerQuota} 积分/个)`; }
                     }
-                } catch (e) {}
+                } catch (e) { }
 
             } catch (e) {
                 showToast('加载失败: ' + e.message, 'error');
             }
         }
 
+        function goPage(p) { currentPage = p; loadRecords(); }
+
         async function loadRecords() {
             const container = document.getElementById('recordsContainer');
             try {
-                const data = await api.getRecords();
-                document.getElementById('statCount').textContent = data.records.length;
+                const data = await api.getRecords(currentPage, pageSize);
+                document.getElementById('statCount').textContent = data.total;
                 if (data.quota !== undefined) {
                     document.getElementById('statLimit').textContent = data.quota === 0 ? '不限' : data.quota;
                 }
 
-                if (data.records.length === 0) {
+                if (data.total === 0) {
                     container.innerHTML = `
             <div class="empty-state">
               <span class="empty-icon">📭</span>
@@ -305,12 +335,12 @@
                     <td style="font-family:monospace;font-size:0.85rem">${r.record_value}</td>
                     <td>${r.proxied ? '<span class="badge badge-success">已开启</span>' : '<span class="badge badge-warning">关闭</span>'}</td>
                     <td style="color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis">${r.remark || '-'}</td>
-                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at).toLocaleString('zh-CN')}</td>
+                    <td style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">${new Date(r.created_at + 'Z').toLocaleString('zh-CN')}</td>
                     <td>
                       <div class="table-actions">
                         ${r.status === 'admin_suspended'
-                          ? '<span style="color:var(--color-error);font-size:0.8rem">⛔ 已被管理员禁用</span>'
-                          : `<button class="btn btn-secondary btn-sm" onclick='openEdit(${JSON.stringify(r)})'>修改</button>
+                        ? '<span style="color:var(--color-error);font-size:0.8rem">⛔ 已被管理员禁用</span>'
+                        : `<button class="btn btn-secondary btn-sm" onclick='openEdit(${JSON.stringify(r)})'>修改</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">删除</button>`}
                       </div>
                     </td>
@@ -318,7 +348,8 @@
                 `).join('')}
               </tbody>
             </table>
-          </div>`;
+          </div>
+          ${renderPagination(data.page, data.pageSize, data.total, 'goPage')}`;
             } catch (e) {
                 container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
             }
@@ -406,6 +437,7 @@
                 await api.createRecord({ subdomain, domain, recordType, recordValue, proxied, remark });
                 closeModalById('addModal');
                 showToast('添加成功！', 'success');
+                currentPage = 1;
                 await loadRecords();
             } catch (e) {
                 showToast(e.message, 'error');
@@ -445,6 +477,7 @@
             try {
                 await api.deleteRecord(id);
                 showToast('删除成功', 'success');
+                currentPage = 1;
                 await loadRecords();
             } catch (e) {
                 showToast(e.message, 'error');
@@ -458,12 +491,12 @@
                 document.getElementById('notificationList').innerHTML =
                     data.notifications.map(n => `<div style="padding:10px 0;border-bottom:1px solid var(--border-glass)">${n.message}</div>`).join('');
                 openModal('notificationModal');
-            } catch (e) {}
+            } catch (e) { }
         }
 
         async function dismissNotifications() {
             closeModalById('notificationModal');
-            try { await api.markNotificationsRead(); } catch (e) {}
+            try { await api.markNotificationsRead(); } catch (e) { }
         }
 
         let creditConfig = {};
