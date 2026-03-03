@@ -13,6 +13,13 @@ An open-source, lightweight subdomain self-service platform powered by the Cloud
 - **Multi-domain Subdomain Pooling**: You can offer multiple primary domains simultaneously from a single platform instance!
 - **Commercialization-Ready (Credits)**: Highly integrated with the Linux.Do Credit system, allowing users to automatically exchange points for extra domain capacity/quotas.
 
+## 🌐 Live Demo
+
+Welcome to try out our live demonstration site (Supports rapid one-click login via GitHub and Linux.Do):
+👉 **[https://yu.9e.nz/](https://yu.9e.nz/)**
+
+> **🎉 Free Public Welfare**: The demo site is completely free and open to the public. Every registered user receives a default quota of **2 free secondary domains**! Everyone is welcome to join and start building!
+
 ---
 
 ## Quick Start
