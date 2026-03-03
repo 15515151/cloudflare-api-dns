@@ -117,13 +117,7 @@
         </div>
         <div class="form-group">
           <label data-i18n="apply.recordType">记录类型</label>
-          <select class="form-control" id="applyType">
-            <option value="A">A (IPv4)</option>
-            <option value="AAAA">AAAA (IPv6)</option>
-            <option value="CNAME">CNAME</option>
-            <option value="TXT">TXT</option>
-            <option value="MX">MX</option>
-          </select>
+          <select class="form-control" id="applyType"></select>
         </div>
         <div class="form-group">
           <label data-i18n="apply.recordValue">记录值</label>
@@ -156,6 +150,19 @@
     let siteConfig = {};
     let checkTimer = null;
 
+    // 根据配置动态填充记录类型下拉框
+    const recordTypeLabels = { A: 'A (IPv4)', AAAA: 'AAAA (IPv6)', CNAME: 'CNAME', TXT: 'TXT', MX: 'MX', NS: 'NS', SRV: 'SRV', CAA: 'CAA' };
+    function populateRecordTypes(selectId, types) {
+      const sel = document.getElementById(selectId);
+      sel.innerHTML = '';
+      (types || ['A', 'AAAA', 'CNAME', 'TXT', 'MX']).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = recordTypeLabels[t] || t;
+        sel.appendChild(opt);
+      });
+    }
+
     // 初始化
     async function init() {
       try {
@@ -172,6 +179,9 @@
           opt.textContent = '.' + d;
           domainSelect.appendChild(opt);
         });
+
+        // 初始化记录类型下拉框（从配置动态读取）
+        populateRecordTypes('applyType', siteConfig.allowedRecordTypes);
 
         if (!siteConfig.allowRegister) {
           const btn = document.getElementById('registerBtn');

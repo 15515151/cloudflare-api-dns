@@ -36,6 +36,7 @@ limits:
     - CNAME
     - TXT
     - MX
+    - NS
 
 # 管理员配置
 admin:

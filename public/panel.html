@@ -58,6 +58,8 @@
                 <div style="display:flex;gap:8px">
                     <button id="creditBtn" class="btn btn-secondary btn-sm" onclick="openCreditModal()"
                         style="display:none" data-i18n="panel.credit">💎 积分兑换配额</button>
+                    <button class="btn btn-secondary btn-sm" onclick="openVerifyModal()" data-i18n="verify.btn">🔑
+                        域名托管验证</button>
                     <button class="btn btn-primary btn-sm" onclick="openAddModal()" data-i18n="panel.addDomain">+
                         添加域名</button>
                 </div>
@@ -87,13 +89,7 @@
                 </div>
                 <div class="form-group">
                     <label data-i18n="add.recordType">记录类型</label>
-                    <select class="form-control" id="addType">
-                        <option value="A">A (IPv4)</option>
-                        <option value="AAAA">AAAA (IPv6)</option>
-                        <option value="CNAME">CNAME</option>
-                        <option value="TXT">TXT</option>
-                        <option value="MX">MX</option>
-                    </select>
+                    <select class="form-control" id="addType"></select>
                 </div>
                 <div class="form-group">
                     <label data-i18n="add.recordValue">记录值</label>
@@ -231,6 +227,46 @@
         </div>
     </div>
 
+    <!-- Verify Modal -->
+    <div class="modal-overlay" id="verifyModal" onclick="closeModal(event,'verifyModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 data-i18n="verify.title">🔑 子域托管验证</h3>
+                <button class="modal-close" onclick="closeModalById('verifyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text-muted);margin-bottom:16px;font-size:0.9rem" data-i18n="verify.hint">
+                    此功能用于将子域名托管到第三方 DNS 平台时的所有权验证。验证记录将在 5 分钟后自动删除。</p>
+                <div class="form-group">
+                    <label data-i18n="verify.subdomain">子域名</label>
+                    <select class="form-control" id="verifySubdomain"></select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="verify.provider">DNS 平台</label>
+                    <select class="form-control" id="verifyProvider">
+                        <option value="aliyun" data-i18n="verify.providerAliyun">阿里云 (Alidns)</option>
+                        <option value="tencent" data-i18n="verify.providerTencent">腾讯云 (DNSPod)</option>
+                        <option value="huawei" data-i18n="verify.providerHuawei">华为云 DNS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="verify.txtValue">验证 TXT 值</label>
+                    <input type="text" class="form-control" id="verifyTxtValue"
+                        data-i18n-placeholder="verify.txtValuePlaceholder" placeholder="粘贴平台提供的验证码">
+                </div>
+                <!-- 进行中的验证 -->
+                <div id="verifyStatusSection" style="display:none;margin-top:16px">
+                    <h4 style="margin-bottom:8px" data-i18n="verify.statusTitle">📝 进行中的验证</h4>
+                    <div id="verifyStatusList"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModalById('verifyModal')" data-i18n="cancel">取消</button>
+                <button class="btn btn-primary" onclick="submitVerify()" data-i18n="verify.submit">创建验证记录</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/api.js"></script>
     <script src="/js/i18n.js"></script>
     <script src="/js/theme.js"></script>
@@ -238,6 +274,20 @@
         let siteConfig = {};
         let currentPage = 1;
         const pageSize = 10;
+        let currentRecords = [];
+
+        // 根据配置动态填充记录类型下拉框
+        const recordTypeLabels = { A: 'A (IPv4)', AAAA: 'AAAA (IPv6)', CNAME: 'CNAME', TXT: 'TXT', MX: 'MX', NS: 'NS', SRV: 'SRV', CAA: 'CAA' };
+        function populateRecordTypes(selectId, types) {
+            const sel = document.getElementById(selectId);
+            sel.innerHTML = '';
+            (types || ['A', 'AAAA', 'CNAME', 'TXT', 'MX']).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = recordTypeLabels[t] || t;
+                sel.appendChild(opt);
+            });
+        }
 
         // 生成分页 HTML
         function renderPagination(page, pageSize, total, onPageChange) {
@@ -288,6 +338,9 @@
                     document.getElementById('navAdminLink').style.display = '';
                 }
 
+                // 初始化记录类型下拉框（从配置动态读取）
+                populateRecordTypes('addType', siteConfig.allowedRecordTypes);
+
                 await loadRecords();
                 checkNotifications();
 
@@ -312,7 +365,8 @@
             const container = document.getElementById('recordsContainer');
             try {
                 const data = await api.getRecords(currentPage, pageSize);
-                document.getElementById('statCount').textContent = data.total;
+                currentRecords = data.records || [];
+                document.getElementById('statCount').textContent = data.quotaUsed !== undefined ? data.quotaUsed : data.total;
                 if (data.quota !== undefined) {
                     document.getElementById('statLimit').textContent = data.quota === 0 ? t('badge.unlimited') : data.quota;
                 }
@@ -427,7 +481,8 @@
             if (!v) { result.style.display = 'none'; return; }
             addCheckTimer = setTimeout(async () => {
                 try {
-                    const data = await api.checkSubdomain(v, document.getElementById('addDomainSelect').value);
+                    const recordType = document.getElementById('addType').value;
+                    const data = await api.checkSubdomain(v, document.getElementById('addDomainSelect').value, recordType);
                     const d = document.getElementById('addDomainSelect').value;
                     result.className = 'domain-check-result ' + (data.available ? 'available' : 'unavailable');
                     result.textContent = data.available ? t('add.available', { domain: `${v}.${d}` }) : t('add.unavailable', { domain: `${v}.${d}` });
@@ -544,10 +599,172 @@
             } catch (e) { showToast(e.message, 'error'); }
         }
 
+        // ===== DNS 托管验证 =====
+        let verifyTimer = null;
+
+        async function openVerifyModal() {
+            // 获取用户所有的子域名用于选择（去重）
+            const subdomains = [...new Set(currentRecords.map(d => `${d.subdomain}.${d.domain}`))];
+
+            if (subdomains.length === 0) {
+                showToast(t('verify.noRecords'), 'error');
+                return;
+            }
+
+            const select = document.getElementById('verifySubdomain');
+            select.innerHTML = subdomains.map(sd => `<option value="${sd}">${sd}</option>`).join('');
+
+            document.getElementById('verifyTxtValue').value = '';
+
+            await loadVerifyStatus();
+            openModal('verifyModal');
+        }
+
+        async function loadVerifyStatus() {
+            try {
+                const data = await api.getVerifyStatus();
+                const section = document.getElementById('verifyStatusSection');
+                const list = document.getElementById('verifyStatusList');
+
+                if (data.verifications && data.verifications.length > 0) {
+                    section.style.display = 'block';
+
+                    if (verifyTimer) clearInterval(verifyTimer);
+
+                    const renderStatus = () => {
+                        const now = Date.now();
+                        let hasActive = false;
+
+                        const html = data.verifications.map(v => {
+                            const expires = new Date(v.expires_at).getTime();
+                            const left = Math.max(0, expires - now);
+                            if (left > 0) hasActive = true;
+
+                            const mins = Math.floor(left / 60000);
+                            const secs = Math.floor((left % 60000) / 1000);
+                            const timeStr = left > 0 ? `${mins}分 ${secs}秒` : t('verify.expired');
+
+                            return `
+                                <div style="background:var(--bg-card);padding:12px;border-radius:8px;margin-bottom:8px;font-size:0.9rem;border:1px solid var(--border-glass)">
+                                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;align-items:center">
+                                        <strong>${v.verify_subdomain}.${v.domain}</strong>
+                                        <div style="display:flex;align-items:center;gap:8px">
+                                            <span style="color:${left > 0 ? 'var(--primary)' : 'var(--danger)'}">⏱️ ${timeStr}</span>
+                                            <button class="btn btn-secondary btn-sm" style="padding:2px 6px;font-size:0.8rem" onclick="deleteVerifyRecord(${v.id}, this)">${t('verify.finish')}</button>
+                                        </div>
+                                    </div>
+                                    <div style="color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+                                        <span>${t('verify.platform')}: ${DNS_VERIFY_PROVIDERS[v.provider] || v.provider}</span>
+                                        <span style="user-select:all;cursor:text;background:rgba(0,0,0,0.1);padding:2px 4px;border-radius:4px" title="TXT 值">${v.txt_value}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        list.innerHTML = html;
+
+                        // 如果全都过期了，停止定时器
+                        if (!hasActive && verifyTimer) {
+                            clearInterval(verifyTimer);
+                            verifyTimer = null;
+                        }
+                    };
+
+                    renderStatus();
+                    verifyTimer = setInterval(renderStatus, 1000);
+                } else {
+                    section.style.display = 'none';
+                    if (verifyTimer) {
+                        clearInterval(verifyTimer);
+                        verifyTimer = null;
+                    }
+                }
+            } catch (e) {
+                console.error('加载验证状态失败:', e);
+            }
+        }
+
+        const DNS_VERIFY_PROVIDERS = {
+            aliyun: '阿里云 (Alidns)',
+            tencent: '腾讯云 (DNSPod)',
+            huawei: '华为云 DNS'
+        };
+
+        async function submitVerify() {
+            const sdFull = document.getElementById('verifySubdomain').value;
+            const provider = document.getElementById('verifyProvider').value;
+            const txtValue = document.getElementById('verifyTxtValue').value.trim();
+
+            if (!sdFull || !provider || !txtValue) {
+                showToast(t('verify.fillAll'), 'error');
+                return;
+            }
+
+            const [sub, ...domParts] = sdFull.split('.');
+            const dom = domParts.join('.');
+
+            const btn = document.querySelector('#verifyModal .btn-primary');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<div class="spinner" style="width:16px;height:16px;margin:0"></div>`;
+            btn.disabled = true;
+
+            try {
+                await api.requestVerification({
+                    subdomain: sub,
+                    domain: dom,
+                    provider,
+                    txtValue
+                });
+
+                showToast(t('verify.success'), 'success');
+                document.getElementById('verifyTxtValue').value = '';
+                await loadVerifyStatus();
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteVerifyRecord(id, btnElement) {
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '<div class="spinner" style="width:12px;height:12px;margin:0"></div>';
+            btnElement.disabled = true;
+            try {
+                await api.deleteVerification(id);
+                showToast(t('admin.deleteSuccess'), 'success');
+                await loadVerifyStatus();
+            } catch (e) {
+                showToast(e.message, 'error');
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+            }
+        }
+
+        // 当关闭 Modal 时清理定时器
+        document.getElementById('verifyModal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                if (verifyTimer) clearInterval(verifyTimer);
+            }
+        });
+        document.querySelector('#verifyModal .modal-close').addEventListener('click', () => {
+            if (verifyTimer) clearInterval(verifyTimer);
+        });
+        document.querySelector('#verifyModal .btn-secondary').addEventListener('click', () => {
+            if (verifyTimer) clearInterval(verifyTimer);
+        });
+
         // 语言切换后重新加载动态内容
         function onLangChange() {
             document.title = t('panel.title');
             loadRecords();
+            if (document.getElementById('creditModal') && document.getElementById('creditModal').style.display === 'flex') {
+                updateCreditDesc();
+            }
+            if (document.getElementById('verifyModal') && document.getElementById('verifyModal').style.display === 'flex') {
+                loadVerifyStatus(); // 语言变了重新渲染倒计时文本
+            }
         }
 
         init();

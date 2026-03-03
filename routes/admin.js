@@ -97,12 +97,25 @@ router.delete('/records/:id', async (req, res) => {
             return res.status(404).json({ error: '记录不存在' });
         }
 
-        // 从 Cloudflare 删除
+        // 从 Cloudflare 删除（带反查补偿）
         const cf = getCF(req, domain.domain);
+        const fullDomain = `${domain.subdomain}.${domain.domain}`;
         try {
             await cf.deleteRecord(domain.cf_record_id);
         } catch (e) {
-            console.warn('Cloudflare 删除可能已不存在:', e.message);
+            console.warn('Cloudflare 按 ID 删除失败，尝试按域名反查:', e.message);
+            try {
+                const cfRecords = await cf.listRecords({ name: fullDomain });
+                const match = cfRecords && cfRecords.find(r => r.type === domain.record_type && r.content === domain.record_value);
+                if (match) {
+                    await cf.deleteRecord(match.id);
+                    console.log(`Cloudflare 反查删除成功: ${match.id}`);
+                } else {
+                    console.warn('Cloudflare 未找到匹配记录，可能已被手动删除');
+                }
+            } catch (e2) {
+                console.warn('Cloudflare 反查删除也失败:', e2.message);
+            }
         }
 
         db.deleteDomain(id);

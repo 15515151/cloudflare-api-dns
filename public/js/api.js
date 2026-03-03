@@ -94,8 +94,9 @@ class ApiClient {
     }
 
     // DNS
-    async checkSubdomain(subdomain, domain) {
-        const query = domain ? `?domain=${encodeURIComponent(domain)}` : '';
+    async checkSubdomain(subdomain, domain, recordType) {
+        let query = domain ? `?domain=${encodeURIComponent(domain)}` : '';
+        if (recordType) query += `${query ? '&' : '?'}recordType=${encodeURIComponent(recordType)}`;
         return this.request('GET', `/dns/check/${encodeURIComponent(subdomain)}${query}`);
     }
 
@@ -113,6 +114,19 @@ class ApiClient {
 
     async deleteRecord(id) {
         return this.request('DELETE', `/dns/records/${id}`);
+    }
+
+    // DNS Verification
+    async requestVerification(data) {
+        return this.request('POST', '/dns/verify', data);
+    }
+
+    async getVerifyStatus() {
+        return this.request('GET', '/dns/verify/status');
+    }
+
+    async deleteVerification(id) {
+        return this.request('DELETE', `/dns/verify/${id}`);
     }
 
     // Admin
