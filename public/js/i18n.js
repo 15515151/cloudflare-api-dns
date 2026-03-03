@@ -18,7 +18,7 @@ const I18N = {
             'error': '错误',
             'or': '或',
             'total': '共',
-            'items': '条',
+            'items': '积分',
             'powered': 'Powered by Cloudflare DNS API',
 
             // ===== 导航 =====
