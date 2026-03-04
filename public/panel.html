@@ -327,12 +327,27 @@
 
                 // 初始化域名下拉框
                 const sel = document.getElementById('addDomainSelect');
-                const domains = siteConfig.domains || [siteConfig.domain];
+                const domains = siteConfig.domains || [{ domain: siteConfig.domain, provider: 'cloudflare' }];
                 domains.forEach(d => {
+                    const domainStr = typeof d === 'string' ? d : d.domain;
+                    const provider = typeof d === 'string' ? 'cloudflare' : d.provider;
                     const opt = document.createElement('option');
-                    opt.value = d; opt.textContent = '.' + d;
+                    opt.value = domainStr; opt.textContent = '.' + domainStr;
+                    opt.dataset.provider = provider;
                     sel.appendChild(opt);
                 });
+
+                sel.addEventListener('change', function () {
+                    const selectedOpt = this.options[this.selectedIndex];
+                    const proxyGroup = document.getElementById('addProxied').closest('.form-group');
+                    if (selectedOpt && selectedOpt.dataset.provider === 'dnspod') {
+                        proxyGroup.style.display = 'none';
+                        document.getElementById('addProxied').checked = false;
+                    } else {
+                        proxyGroup.style.display = '';
+                    }
+                });
+                if (sel.options.length > 0) sel.dispatchEvent(new Event('change'));
 
                 if (api.isAdmin()) {
                     document.getElementById('navAdminLink').style.display = '';
@@ -516,11 +531,23 @@
 
         function openEdit(record) {
             document.getElementById('editId').value = record.id;
-            document.getElementById('editDomain').value = record.subdomain + '.' + siteConfig.domain;
+            document.getElementById('editDomain').value = record.subdomain + '.' + (record.domain || siteConfig.domain);
             document.getElementById('editType').value = record.record_type;
             document.getElementById('editValue').value = record.record_value;
             document.getElementById('editRemark').value = record.remark || '';
             document.getElementById('editProxied').checked = !!record.proxied;
+
+            const domains = siteConfig.domains || [];
+            const dConf = domains.find(d => (typeof d === 'string' ? d : d.domain) === (record.domain || siteConfig.domain)) || {};
+            const provider = (typeof dConf === 'string' ? 'cloudflare' : dConf.provider) || 'cloudflare';
+            const proxyGroup = document.getElementById('editProxied').closest('.form-group');
+            if (provider === 'dnspod') {
+                proxyGroup.style.display = 'none';
+                document.getElementById('editProxied').checked = false;
+            } else {
+                proxyGroup.style.display = '';
+            }
+
             openModal('editModal');
         }
 

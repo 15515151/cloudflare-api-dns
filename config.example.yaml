@@ -5,13 +5,20 @@ cloudflare:
   # 默认 Zone ID（兜底用，建议在 domains 列表中配置）
   zoneId: "your-zone-id"
 
+# DNSPod API 配置
+dnspod:
+  # DNSPod 的 SecretId 和 SecretKey
+  secretId: "your-dnspod-secret-id"
+  secretKey: "your-dnspod-secret-key"
+
 # 多域名配置（enabled: false 则不对外开放，但保留配置）
 domains:
   - domain: "example.com"
+    provider: "cloudflare"
     zoneId: "your-zone-id"
     enabled: true
   # - domain: "example2.com"
-  #   zoneId: "your-zone-id-2"
+  #   provider: "dnspod"
   #   enabled: false
 
 # 站点设置

@@ -54,9 +54,9 @@ app.get('/api/config', (req, res) => {
   const defaultQuota = parseInt(db.getSystemConfig('default_domain_quota') || '10');
   const enabledDomains = (config.domains || [])
     .filter(d => d.enabled)
-    .map(d => d.domain);
+    .map(d => ({ domain: d.domain, provider: d.provider || 'cloudflare' }));
   // 兼容旧配置：若没有 domains 列表则用 site.domain
-  if (enabledDomains.length === 0) enabledDomains.push(config.site.domain);
+  if (enabledDomains.length === 0) enabledDomains.push({ domain: config.site.domain, provider: 'cloudflare' });
 
   res.json({
     domain: config.site.domain,

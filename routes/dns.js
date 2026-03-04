@@ -43,16 +43,16 @@ router.get('/check/:subdomain', async (req, res) => {
             return res.json({ available: false, subdomain, source: 'local' });
         }
 
-        // 2. 检查 Cloudflare 是否已有该记录（管理员在 CF 后台手动添加的记录不允许被占用）
+        // 2. 检查 DNS 是否已有该记录
         const cf = getCF(req, domain);
         const fullDomain = `${subdomain}.${domain}`;
         try {
             const cfRecords = await cf.listRecords({ name: fullDomain });
             if (cfRecords && cfRecords.length > 0) {
-                return res.json({ available: false, subdomain, source: 'cloudflare' });
+                return res.json({ available: false, subdomain, source: 'dns' });
             }
         } catch (e) {
-            console.warn('Cloudflare 检查失败，仅使用本地数据库结果:', e.message);
+            console.warn('DNS API 检查失败，仅使用本地数据库结果:', e.message);
         }
 
         res.json({ available: true, subdomain });
@@ -170,7 +170,7 @@ router.post('/records', async (req, res) => {
         try {
             cfRecords = await cf.listRecords({ name: fullDomain }) || [];
         } catch (e) {
-            console.warn('Cloudflare 预检查失败:', e.message);
+            console.warn('DNS API 预检查失败:', e.message);
         }
 
         if (existing) {
@@ -201,8 +201,13 @@ router.post('/records', async (req, res) => {
             }
         }
 
-        // 调用 Cloudflare API 创建记录（cf 和 fullDomain 已在上面声明）
-        const shouldProxy = ['A', 'AAAA', 'CNAME'].includes(recordType) ? (proxied || false) : false;
+        // 调用 Cloudflare/DNSPod API 创建记录
+        const domainConfig = (req.config.domains || []).find(d => d.domain === domain) || {};
+        const providerName = domainConfig.provider || 'cloudflare';
+        const shouldProxy = providerName === 'cloudflare'
+            ? (['A', 'AAAA', 'CNAME'].includes(recordType) ? (proxied || false) : false)
+            : false;
+
 
         const cfRecord = await cf.createRecord(recordType, fullDomain, recordValue, shouldProxy, 1);
 
@@ -253,11 +258,17 @@ router.put('/records/:id', async (req, res) => {
             return res.status(400).json({ error: '请填写记录值' });
         }
 
-        // 更新 Cloudflare
+        // 更新 Cloudflare/DNSPod
         const cf = getCF(req, domain.domain);
+        const domainConfig = (req.config.domains || []).find(d => d.domain === domain.domain) || {};
+        const providerName = domainConfig.provider || 'cloudflare';
+        const shouldProxy = providerName === 'cloudflare'
+            ? (['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false)
+            : false;
+
         await cf.updateRecord(domain.cf_record_id, {
             content: recordValue,
-            proxied: ['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false
+            proxied: shouldProxy
         });
 
         // 更新数据库

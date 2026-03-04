@@ -8,7 +8,7 @@
 
 - **现代安全体验**：支持邮箱/密码基础注册，以及 GitHub OAuth2 和 Linux.Do OAuth2 一键登录。
 - **丰富的记录支持**：用户可以自助申请子域名，并实时管理其 A、AAAA、CNAME、TXT、MX DNS 记录。
-- **底层 Cloudflare 驱动**：使用 Cloudflare API 通信，确保生效极速秒级解析，更可自由开启/关闭 Cloudflare 代理（小黄云）防御。
+- **底层双擎驱动**：默认使用 Cloudflare API 通信，确保生效极速秒级解析，更可自由开启/关闭 Cloudflare 代理（小黄云）防御。同时现已**全新支持国内腾讯云 DNSPod**，可直接在同一站内混合管理两大平台域名。
 - **完善的管理后台**：内建管理员控制台，可管理全站用户、挂起恶意域名、调整每个用户的独立配额，或调整站点系统设置。
 - **多主域名支持**：单实例即可为多个主域名分配子域名！
 - **商业化准备 （积分功能）**：高度集成 Linux.Do Credit 积分系统，支持用户自动兑换域名购买配额。
@@ -55,6 +55,11 @@ cloudflare:
   apiToken: "你的-cloudflare-api-token" # 刚刚创建的带有编辑权限的 Token 
   zoneId: "你的-主域名-zoneId"          # 兜底的主域名 Zone ID
 
+# 【全新】腾讯云 DNSPod API 配置（如不需要可留空）
+dnspod:
+  secretId: "你的-dnspod-secret-id"
+  secretKey: "你的-dnspod-secret-key"
+
 # 你的站点域名设置！这一栏千万不能马虎
 site:
   port: 3000                        # 服务运行端口，如果你使用了反向代理可以不动
@@ -62,13 +67,13 @@ site:
   jwtSecret: "在此随意输入一段极长的随机无序英文字符串作为密码种子" # 【必填】生成用户令牌加密时的钥匙
   siteName: "我的域名分发站"          # 展现在前端和网页标题的名字 
 
-# 可选的多主域名阵列：如果您有多条极品短域名可以放在这里一起共享给别人申请
+# 可选的多主域名阵列：支持混合使用 Cloudflare 与 DNSPod 域名
 domains:
-  - domain: "example.com"      # 主力共享域名 1 
-    zoneId: "11111111111..."   # 从 CF 获取它的 zoneID
-    enabled: true              # 设为 true 才会显示并开放申请
-  - domain: "example.net"      # 新增加共享域名 2
-    zoneId: "22222222222..."
+  - domain: "example.com"      # 主力共享域名 1 (未指定 provider 默认使用 Cloudflare)
+    zoneId: "11111111111..."   
+    enabled: true              
+  - domain: "qqun.top"         # 新增加的 DNSPod 域名 
+    provider: "dnspod"         # 显式指定服务商为 dnspod
     enabled: true   
 
 # 管理员安全

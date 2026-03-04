@@ -8,7 +8,7 @@ An open-source, lightweight subdomain self-service platform powered by the Cloud
 
 - **Modern & Secure Login**: Supports basic Email/Password registration as well as one-click GitHub OAuth2 and Linux.Do OAuth2 logins.
 - **Rich DNS Record Management**: Users can independently register subdomains and manage their A, AAAA, CNAME, TXT, and MX DNS records in real-time.
-- **Cloudflare Powered**: Communicates via the Cloudflare API, ensuring extremely fast TTFB and resolution in seconds. Freely toggle the Cloudflare proxy (the "orange cloud") for DDoS protection.
+- **Dual-Engine Powered**: By default, communicates via the Cloudflare API, ensuring extremely fast TTFB and resolution in seconds. Freely toggle the Cloudflare proxy (the "orange cloud") for DDoS protection. Uniquely, **it now also supports Tencent Cloud DNSPod**, allowing you to host and manage domains from both platforms simultaneously on the same site.
 - **Comprehensive Admin Panel**: A built-in dashboard for the admin to oversee all users, suspend malicious/abusive domains, customize independent domain quotas per user, and adjust global platform settings.
 - **Multi-domain Subdomain Pooling**: You can offer multiple primary domains simultaneously from a single platform instance!
 - **Commercialization-Ready (Credits)**: Highly integrated with the Linux.Do Credit system, allowing users to automatically exchange points for extra domain capacity/quotas.
@@ -55,6 +55,11 @@ cloudflare:
   apiToken: "your-cloudflare-api-token" # The Token you just created with DNS edit permissions
   zoneId: "your-main-zone-id"           # Fallback Primary Domain Zone ID
 
+# [NEW] Tencent Cloud DNSPod Configuration (Leave blank if not needed)
+dnspod:
+  secretId: "your-dnspod-secret-id"
+  secretKey: "your-dnspod-secret-key"
+
 # Basic Site Settings! Do not gloss over this section
 site:
   port: 3000                        # Service running port (ideal behind a reverse proxy)
@@ -62,13 +67,13 @@ site:
   jwtSecret: "some-extremely-long-random-string-goes-here" # [REQUIRED] Used as the encryption seed for JWT tokens
   siteName: "My Domain Hub"         # The title shown on the frontend and browser tabs
 
-# Optional Multi-Domain Array: If you have multiple primary domains you want to share, list them here
+# Optional Multi-Domain Array: Supports mixing Cloudflare and DNSPod domains
 domains:
-  - domain: "example.com"      # Primary shared domain 1
-    zoneId: "11111111111..."   # Its Zone ID retrieved from CF
-    enabled: true              # Must be 'true' for users to see and select it
-  - domain: "example.net"      # Shared domain 2
-    zoneId: "22222222222..."
+  - domain: "example.com"      # Primary shared domain 1 (Falls back to Cloudflare if provider is omitted)
+    zoneId: "11111111111..."   
+    enabled: true              
+  - domain: "qqun.top"         # Newly added DNSPod domain
+    provider: "dnspod"         # Explicitly set the provider to dnspod
     enabled: true   
 
 # Administrator Security
