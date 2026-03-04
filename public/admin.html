@@ -99,6 +99,21 @@
 
         <!-- Settings Panel -->
         <div id="settingsPanel" class="hidden">
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header">
+                    <h2 data-i18n="settings.notifyTitle">📢 发送全站通知</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <textarea class="form-control" id="globalNotifyMsg" rows="3"
+                            data-i18n-placeholder="settings.notifyPlaceholder"
+                            placeholder="填写要广播给所有用户的系统通知内容..."></textarea>
+                    </div>
+                    <button class="btn btn-warning" onclick="sendGlobalNotify()"
+                        data-i18n="settings.notifyBtn">发送广播</button>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h2 data-i18n="settings.title">系统设置</h2>
@@ -622,6 +637,17 @@
             try {
                 await api.updateAdminSettings({ allowRegister, allowOauthRegister, allowGithubRegister, defaultDomainQuota });
                 showToast(t('settings.success'), 'success');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        async function sendGlobalNotify() {
+            const msg = document.getElementById('globalNotifyMsg').value.trim();
+            if (!msg) { showToast(t('settings.notifyEmpty'), 'error'); return; }
+            if (!confirm(t('settings.notifyConfirm'))) return;
+            try {
+                const res = await api.sendGlobalNotification(msg);
+                showToast(res.message, 'success');
+                document.getElementById('globalNotifyMsg').value = '';
             } catch (e) { showToast(e.message, 'error'); }
         }
 

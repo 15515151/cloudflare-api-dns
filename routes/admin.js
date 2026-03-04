@@ -362,4 +362,26 @@ router.put('/records/:id/status', async (req, res) => {
     }
 });
 
+// 发送全站通知
+router.post('/notify-all', async (req, res) => {
+    try {
+        const { message } = req.body;
+        if (!message || message.trim() === '') {
+            return res.status(400).json({ error: '通知内容不能为空' });
+        }
+
+        const users = db.getAllUsers();
+        let count = 0;
+        for (const user of users) {
+            db.createNotification(user.id, message);
+            count++;
+        }
+
+        res.json({ message: `成功发送全站通知，覆盖 ${count} 名用户` });
+    } catch (err) {
+        console.error('发送全站通知失败:', err);
+        res.status(500).json({ error: '发送系统通知失败' });
+    }
+});
+
 module.exports = router;

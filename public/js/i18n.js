@@ -18,7 +18,7 @@ const I18N = {
             'error': '错误',
             'or': '或',
             'total': '共',
-            'items': '积分',
+            'items': '项',
             'powered': 'Powered by Cloudflare DNS API',
 
             // ===== 导航 =====
@@ -178,6 +178,7 @@ const I18N = {
 
             // ===== 积分弹窗 =====
             'credit.title': '💎 积分兑换域名配额',
+            'credit.points': '积分',
             'credit.quantity': '购买数量（1-30）',
             'credit.desc': '每个域名配额消耗 {n} 积分。',
             'credit.total': '共消耗 {total} 积分，兑换 {qty} 个域名配额。',
@@ -275,6 +276,13 @@ const I18N = {
             'settings.save': '保存设置',
             'settings.success': '设置保存成功！',
             'settings.loadFailed': '加载设置失败',
+
+            // ===== 发送全站通知 =====
+            'settings.notifyTitle': '📢 发送全站通知',
+            'settings.notifyPlaceholder': '填写要广播给所有用户的系统通知内容（例如：停机维护、线路迁移、规则更改等）...',
+            'settings.notifyBtn': '发送广播',
+            'settings.notifyConfirm': '确定要发送这则全站广播吗？此操作不可撤销！',
+            'settings.notifyEmpty': '通知内容不能为空',
 
             // ===== DNS 托管验证 =====
             'verify.title': '🔑 子域托管验证',
@@ -473,6 +481,7 @@ const I18N = {
 
             // ===== Credits =====
             'credit.title': '💎 Exchange Credits for Quota',
+            'credit.points': 'credits',
             'credit.quantity': 'Quantity (1-30)',
             'credit.desc': '{n} credits per domain quota.',
             'credit.total': 'Total: {total} credits for {qty} domain quota(s).',
@@ -570,6 +579,13 @@ const I18N = {
             'settings.save': 'Save Settings',
             'settings.success': 'Settings saved successfully!',
             'settings.loadFailed': 'Failed to load settings',
+
+            // ===== Global Notification =====
+            'settings.notifyTitle': '📢 Global Notification',
+            'settings.notifyPlaceholder': 'Enter the broadcast message for all users...',
+            'settings.notifyBtn': 'Send Broadcast',
+            'settings.notifyConfirm': 'Are you sure you want to send this broadcast to all users? This action cannot be undone!',
+            'settings.notifyEmpty': 'Message cannot be empty',
 
             // ===== DNS Delegation Verification =====
             'verify.title': '🔑 Subdomain Delegation Verify',

@@ -146,6 +146,9 @@ router.post('/records', async (req, res) => {
             if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-\.]*[a-zA-Z0-9])?$/.test(recordValue) || recordValue.length > 253) {
                 return res.status(400).json({ error: 'NS 记录值必须是有效的域名' });
             }
+            if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(recordValue)) {
+                return res.status(400).json({ error: 'NS 记录值不能是 IP 地址，必须是有效的域名' });
+            }
         }
 
         // 检查额度 - 优先使用用户个人配额，否则使用默认配额
@@ -388,9 +391,9 @@ router.post('/verify', async (req, res) => {
             return res.status(409).json({ error: '该子域名正在被其他用户验证中，请稍后再试（5分钟内）' });
         }
 
-        // 在 Cloudflare 创建 TXT 记录
+        // 在 Cloudflare 或 DNSPod 创建 TXT 记录
         const cf = getCF(req, domain);
-        const cfRecord = await cf.createRecord('TXT', fullVerifyDomain, txtValue, false, 1);
+        const cfRecord = await cf.createRecord('TXT', fullVerifyDomain, txtValue, false, 600);
 
         // 保存到数据库
         const expiresAt = new Date(Date.now() + VERIFY_DURATION_MS).toISOString();

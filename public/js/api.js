@@ -199,6 +199,10 @@ class ApiClient {
     async getAdminStats() {
         return this.request('GET', '/admin/stats');
     }
+
+    async sendGlobalNotification(message) {
+        return this.request('POST', '/admin/notify-all', { message });
+    }
 }
 
 // 全局实例
