@@ -70,10 +70,42 @@ router.put('/records/:id', async (req, res) => {
             return res.status(400).json({ error: '请填写记录值' });
         }
 
-        // 更新 Cloudflare
+        // 更新 DNS 提供商
         const cf = getCF(req, domain.domain);
-        const shouldProxy = ['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false;
-        await cf.updateRecord(domain.cf_record_id, {
+        const domainConfig = (req.config.domains || []).find(d => d.domain === domain.domain) || {};
+        const providerName = domainConfig.provider || 'cloudflare';
+        const shouldProxy = providerName === 'cloudflare'
+            ? (['A', 'AAAA', 'CNAME'].includes(domain.record_type) ? (proxied || false) : false)
+            : false;
+
+        let actualCfRecordId = domain.cf_record_id;
+
+        // DNSPod 迁移：如果记录 ID 不是纯数字，先反查
+        if (providerName === 'dnspod' && !/^\d+$/.test(String(actualCfRecordId))) {
+            console.log(`[管理员迁移修复] 旧 CF 记录 ID (${actualCfRecordId})，反查 DNSPod...`);
+            const fullDomain = `${domain.subdomain}.${domain.domain}`;
+            try {
+                const dnspodRecords = await cf.listRecords({ name: fullDomain });
+                const match = dnspodRecords && dnspodRecords.find(r => r.type === domain.record_type && r.content === domain.record_value);
+                if (match) {
+                    actualCfRecordId = match.id;
+                    db.updateDomainCfRecordId(id, actualCfRecordId);
+                    console.log(`[管理员迁移修复] 找到 DNSPod ID: ${actualCfRecordId}`);
+                } else {
+                    const newRecord = await cf.createRecord(domain.record_type, fullDomain, recordValue, false, domain.ttl || 600);
+                    db.updateDomainCfRecordId(id, newRecord.id);
+                    db.updateDomain(id, recordValue, shouldProxy, domain.ttl, remark);
+                    return res.json({ message: '修改成功' });
+                }
+            } catch (lookupErr) {
+                const newRecord = await cf.createRecord(domain.record_type, `${domain.subdomain}.${domain.domain}`, recordValue, false, domain.ttl || 600);
+                db.updateDomainCfRecordId(id, newRecord.id);
+                db.updateDomain(id, recordValue, shouldProxy, domain.ttl, remark);
+                return res.json({ message: '修改成功' });
+            }
+        }
+
+        await cf.updateRecord(actualCfRecordId, {
             content: recordValue,
             proxied: shouldProxy
         });
@@ -97,24 +129,36 @@ router.delete('/records/:id', async (req, res) => {
             return res.status(404).json({ error: '记录不存在' });
         }
 
-        // 从 Cloudflare 删除（带反查补偿）
+        // 从 DNS 提供商删除（带反查补偿）
         const cf = getCF(req, domain.domain);
         const fullDomain = `${domain.subdomain}.${domain.domain}`;
-        try {
-            await cf.deleteRecord(domain.cf_record_id);
-        } catch (e) {
-            console.warn('Cloudflare 按 ID 删除失败，尝试按域名反查:', e.message);
+        const domainConfig = (req.config.domains || []).find(d => d.domain === domain.domain) || {};
+        const providerName = domainConfig.provider || 'cloudflare';
+        let deleteRecordId = domain.cf_record_id;
+
+        // DNSPod 迁移：如果记录 ID 不是纯数字，先反查
+        if (providerName === 'dnspod' && !/^\d+$/.test(String(deleteRecordId))) {
             try {
-                const cfRecords = await cf.listRecords({ name: fullDomain });
-                const match = cfRecords && cfRecords.find(r => r.type === domain.record_type && r.content === domain.record_value);
-                if (match) {
-                    await cf.deleteRecord(match.id);
-                    console.log(`Cloudflare 反查删除成功: ${match.id}`);
-                } else {
-                    console.warn('Cloudflare 未找到匹配记录，可能已被手动删除');
+                const dnspodRecords = await cf.listRecords({ name: fullDomain });
+                const match = dnspodRecords && dnspodRecords.find(r => r.type === domain.record_type && r.content === domain.record_value);
+                deleteRecordId = match ? match.id : null;
+            } catch (e) { deleteRecordId = null; }
+        }
+
+        if (deleteRecordId) {
+            try {
+                await cf.deleteRecord(deleteRecordId);
+            } catch (e) {
+                console.warn('按 ID 删除失败，尝试反查:', e.message);
+                try {
+                    const cfRecords = await cf.listRecords({ name: fullDomain });
+                    const match = cfRecords && cfRecords.find(r => r.type === domain.record_type && r.content === domain.record_value);
+                    if (match) {
+                        await cf.deleteRecord(match.id);
+                    }
+                } catch (e2) {
+                    console.warn('反查删除也失败:', e2.message);
                 }
-            } catch (e2) {
-                console.warn('Cloudflare 反查删除也失败:', e2.message);
             }
         }
 
