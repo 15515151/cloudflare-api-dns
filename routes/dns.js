@@ -26,8 +26,9 @@ router.get('/check/:subdomain', async (req, res) => {
             return res.status(400).json({ error: '该域名不可用', available: false });
         }
 
-        // 验证子域名格式
-        if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
+        // 验证子域名格式（允许下划线和多级子域名，如 _acme-challenge.alii）
+        const subLabels = subdomain.split('.');
+        if (!subLabels.every(l => /^[a-zA-Z0-9_]([a-zA-Z0-9_-]*[a-zA-Z0-9_])?$/.test(l) && l.length <= 63)) {
             return res.status(400).json({ error: '子域名格式不正确', available: false });
         }
 
@@ -96,9 +97,10 @@ router.post('/records', async (req, res) => {
             return res.status(400).json({ error: '请填写完整信息' });
         }
 
-        // 验证子域名格式和长度
-        if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain) || subdomain.length > 63) {
-            return res.status(400).json({ error: '子域名格式不正确，仅允许字母、数字和连字符，且不超过63个字符' });
+        // 验证子域名格式和长度（允许下划线和多级子域名，如 _acme-challenge.alii）
+        const subLabels = subdomain.split('.');
+        if (!subLabels.every(l => /^[a-zA-Z0-9_]([a-zA-Z0-9_-]*[a-zA-Z0-9_])?$/.test(l) && l.length <= 63) || subdomain.length > 253) {
+            return res.status(400).json({ error: '子域名格式不正确，每段仅允许字母、数字、连字符和下划线，每段不超过63个字符' });
         }
 
         // 禁止的子域名（包含 DNS 验证子域）
