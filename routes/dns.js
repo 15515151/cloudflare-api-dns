@@ -320,7 +320,7 @@ router.put('/records/:id', async (req, res) => {
         console.log(`[DNS 修改] 用户=${req.user.username}(${req.user.id}) id=${id} 新值=${recordValue}`);
         res.json({ message: '修改成功' });
     } catch (err) {
-        console.error(`修改域名记录失败: 用户=${req.user?.username}(${req.user?.id}) id=${id} 子域名=${domain?.subdomain}.${domain?.domain} 类型=${domain?.record_type} 新值=${recordValue}`, err);
+        console.error(`修改域名记录失败: 用户=${req.user?.username}(${req.user?.id}) id=${req.params?.id} 新值=${req.body?.recordValue}`, err);
         res.status(500).json({ error: err.message || '修改失败，请重试' });
     }
 });
